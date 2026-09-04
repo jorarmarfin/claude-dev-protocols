@@ -33,6 +33,22 @@ Pregunta (si no vino ya en el mensaje del usuario): nombre del proyecto
 (usarlo para el nombre de carpeta en snake_case y como `name:` en
 pubspec.yaml) y una idea de una linea de que hace la app.
 
+### Diseños de referencia (opcional, pero úsalos si están)
+
+El usuario a veces deja diseños sugeridos (mockups, capturas, exports de
+Figma/imagenes de pantallas) sueltos en la raiz junto al logo, antes de
+pedir el scaffold. Revisa la raiz por imagenes/archivos de diseño que no
+sean el logo (nombres como `design*`, `mockup*`, `screen*`, o varias
+imagenes ademas del logo). Si encuentras alguno:
+- Úsalo como base real para el tema (paleta, tipografia, estilo de
+  componentes) y para el layout de las pantallas iniciales — no lo
+  ignores ni reemplaces por un estilo generico de Material 3 default.
+- Si el diseño sugiere colores/tipografia distintos a lo que saldria de
+  `extract_colors.py` (Paso 4), el diseño manda sobre el logo para el
+  tema — el logo solo define marca, el diseño define UI.
+- Si no encuentras ninguno, sigue el flujo normal (tema derivado solo
+  del logo) sin preguntar por diseños que no dejo.
+
 ## Paso 1 — preguntas de configuracion (AskUserQuestion)
 
 Agrupa esto en 1-2 llamadas a AskUserQuestion (maximo 4 preguntas por
@@ -145,6 +161,12 @@ seccion para decidir donde poner cosas nuevas en ese proyecto, no para
 reorganizar lo que ya funciona.
 
 Crea tambien: `assets/images/`, `assets/fonts/` (si aplica), `scripts/`.
+
+Crea ademas `docs/` en la raiz del proyecto (fuera de `lib/`) — carpeta
+para documentacion del proyecto (decisiones, notas de arquitectura,
+guias de release, etc.) que el usuario ira llenando. No hace falta
+generar contenido ahi; basta con crearla (con un `.gitkeep` si el
+proyecto no tiene nada que poner todavia).
 
 ## Paso 4 — logo y tema derivado
 

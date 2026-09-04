@@ -46,7 +46,17 @@ después que preguntar 30 segundos ahora.
 sean triviales (no solo `.git`, `README.md` vacío), avisa al usuario y
 confirma si continuar, en vez de sobrescribir en silencio.
 
-### 2. Generar la estructura según el stack
+### 2. Convención universal — carpeta `docs/`
+
+Sin importar el stack, todo proyecto nuevo lleva una carpeta `docs/` en
+la raíz (fuera de `src/`/`app/`) para que el usuario vaya colocando ahí
+documentación pertinente (decisiones de arquitectura, notas de release,
+runbooks, etc.). Créala siempre como parte del scaffold, aunque quede
+vacía (`.gitkeep` si hace falta) — no generes contenido ahí a menos que
+el proyecto ya tenga algo concreto que documentar (ver más abajo el caso
+de colas en Laravel, que sí usa `docs/` desde el inicio).
+
+### 3. Generar la estructura según el stack
 
 #### Laravel
 
@@ -86,6 +96,53 @@ Entregables mínimos del scaffold:
 - [ ] `routes/api.php` con un endpoint de healthcheck (`GET /api/health`)
 - [ ] Configuración de CORS si va a servir a un frontend separado
 - [ ] `README.md` con setup instructions (clonar, `.env`, migrar, correr)
+
+##### `api.http` — obligatorio en cuanto haya API
+
+En cuanto el proyecto tenga endpoints de API (aunque sea solo el
+healthcheck inicial), crea `api.http` en la raíz del proyecto con
+ejemplos de request por cada endpoint (método, URL, headers, body de
+ejemplo). Formato estándar de `.http` (compatible con la extensión REST
+Client / el cliente HTTP de PhpStorm/IntelliJ):
+
+```http
+### Healthcheck
+GET {{baseUrl}}/api/health
+
+### Login
+POST {{baseUrl}}/api/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "secret"
+}
+```
+
+Define `{{baseUrl}}` como variable al inicio del archivo o en un bloque
+de variables de entorno del propio formato `.http`. Actualiza
+`api.http` cada vez que se agregue o cambie un endpoint — es
+documentación viva de la API, no un archivo de una sola vez.
+
+##### Colas (Horizon + systemd) — solo si el proyecto usa colas
+
+Si el proyecto usa colas (`QUEUE_CONNECTION` distinto de `sync`, o el
+usuario confirma que las va a usar), además de configurar Horizon
+normalmente (`composer require laravel/horizon`, `php artisan
+horizon:install`), crea `docs/queues/` con archivos de ejemplo para
+desplegarlo en el servidor:
+
+- `docs/queues/horizon.conf.example` — ejemplo de configuración de
+  Supervisor/Horizon (comando `php artisan horizon`, `autostart`,
+  `autorestart`, `user`, `redirect_stderr`, ruta de log)
+- `docs/queues/laravel-queue.service.example` — ejemplo de unit file de
+  systemd equivalente (`ExecStart=php artisan horizon` o `queue:work`,
+  `Restart=always`, `User=`, `WorkingDirectory=`)
+
+Estos son plantillas de referencia para cuando el usuario despliegue a
+un servidor real — no se activan ni instalan automáticamente, solo
+quedan documentados en `docs/queues/` para copiar y ajustar en su
+momento.
 
 #### React
 
@@ -157,7 +214,7 @@ Entregables mínimos:
 - [ ] `content/config.ts` con schema si el proyecto usa colecciones de contenido
 - [ ] `README.md` con setup instructions
 
-### 3. Después de generar
+### 4. Después de generar
 
 - Corre el proyecto (`php artisan serve`, `npm run dev`, etc.) para
   confirmar que arranca sin error antes de reportar como terminado
@@ -180,4 +237,11 @@ Entregables mínimos:
 - **Siempre entrega un `.env.example` completo y comentado**, nunca vacío.
 - **Verifica que el proyecto corre** antes de dar el scaffold por
   terminado — un scaffold que no levanta no sirve de nada.
+- **`docs/` siempre se crea**, sin importar el stack — es donde el
+  usuario coloca su propia documentación después.
+- **`api.http` es obligatorio en cuanto haya API en Laravel**, y se
+  mantiene actualizado a medida que se agregan endpoints — no es un
+  archivo de una sola vez al inicio del proyecto.
+- **`docs/queues/` con ejemplos de Horizon + systemd** solo si el
+  proyecto usa colas — no lo crees en proyectos sin colas.
 - Para Flutter, delega siempre a `flutter-new-app`.
