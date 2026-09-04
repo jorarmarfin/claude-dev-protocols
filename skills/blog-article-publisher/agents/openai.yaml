@@ -1,0 +1,3 @@
+interface:
+  display_name: "Blog Article Publisher"
+  short_description: "Publish blog articles via local API"
