@@ -68,7 +68,9 @@ The local article Markdown format maps to the API payload as follows:
 - `## Fuentes`: numbered entries using `source_id`, `reference`, `quote`, and optional `context_note`.
 - `## Contenido`: everything after this heading, until `## Fuentes` if present, becomes `content`.
 
-When a topic or tag line includes notes such as `verificar existencia`, do not silently treat it as confirmed taxonomy for the draft endpoint. Ask whether to omit it from the draft payload or attach it afterward with the association endpoint, which can create missing topics/tags according to `api.http`.
+The draft endpoints (`POST /ai/drafts`, `PUT /ai/drafts/{slug}`) auto-create any topic or tag that doesn't already exist yet, resolved by slug — no separate association call is needed just because a topic/tag is new. `section` is the only taxonomy field that must already exist; an unknown section slug returns `422`.
+
+When a topic or tag line includes editorial notes such as `verificar existencia`, that flag is about whether the suggestion is a good fit editorially, not about whether the API can create it — it can. Ask the user whether to include it as-is, drop it, or hold it for confirmation before sending; don't silently send unconfirmed AI-suggested taxonomy.
 
 When source lines contain `source_id: PENDIENTE`, omit those source entries from the API payload and tell the user that source ids still need editorial confirmation before they can be attached.
 

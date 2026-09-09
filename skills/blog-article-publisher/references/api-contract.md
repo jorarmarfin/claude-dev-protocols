@@ -72,7 +72,8 @@ Rules from the local docs:
 
 - Draft endpoints always create or edit drafts, never published articles.
 - `ai_assisted=true` is handled by the API.
-- `section`, `topics`, and `tags` must already exist for draft endpoints.
+- `section` must already exist (by slug); an unknown section returns `422`.
+- `topics` and `tags` no longer need to exist beforehand: the draft endpoints resolve each entry by slug and auto-create it (name + slug) when missing, the same way the association endpoints do. Sending a slug or a plain name both work.
 - `series` is not accepted in the JSON; mention series suggestions in `ai_notes`.
 - `status`, `is_featured`, `published_at`, `author_id`, and `review_notes` are ignored if sent.
 - Updating a draft replaces the full article content.
@@ -98,7 +99,7 @@ Remove one topic:
 DELETE {baseUrl}/ai/articles/{slug}/topics/{topic}
 ```
 
-The association endpoint can create missing topics by name/slug according to `api.http`.
+The association endpoint creates missing topics by name/slug, same as the draft endpoints. Use it to add/remove topics on an already-published or non-draft article, or when only touching taxonomy without resending the full article body.
 
 ## Tags
 
@@ -120,7 +121,7 @@ Remove one tag:
 DELETE {baseUrl}/ai/articles/{slug}/tags/{tag}
 ```
 
-The association endpoint can create missing tags by name/slug according to `api.http`.
+The association endpoint creates missing tags by name/slug, same as the draft endpoints. Use it to add/remove tags on an already-published or non-draft article, or when only touching taxonomy without resending the full article body.
 
 ## Sources
 
