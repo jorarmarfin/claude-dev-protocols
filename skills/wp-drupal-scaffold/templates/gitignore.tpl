@@ -1,0 +1,9 @@
+.env
+/mysql/
+/certs/
+/{{DOCROOT}}/wp-content/uploads/
+/{{DOCROOT}}/sites/default/files/
+/sql.init/*.sql
+/sql.init/*.sql.gz
+node_modules/
+tests/reports/*.pdf

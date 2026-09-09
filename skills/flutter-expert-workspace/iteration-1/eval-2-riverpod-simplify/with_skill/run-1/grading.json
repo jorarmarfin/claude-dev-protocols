@@ -1,0 +1,40 @@
+{
+  "eval_id": 2,
+  "run_type": "with_skill",
+  "expectations": [
+    {
+      "text": "decision_table_or_guide: Incluye tabla o guía de decisión clara: cuándo usar Riverpod vs setState vs ValueNotifier",
+      "passed": true,
+      "evidence": "Table at the start of the response maps state types to tools: 'TextField enfocado, visible/oculto, tab activo → setState en StatefulWidget', 'Contador local, toggle simple → ValueNotifier + ValueListenableBuilder', 'Datos del usuario desde API → AsyncNotifierProvider', etc."
+    },
+    {
+      "text": "setstate_recommended: Recomienda setState o StatefulWidget para estado local de UI (foco, toggles)",
+      "passed": true,
+      "evidence": "'Paso 2: Convierte la pantalla a StatefulWidget para el estado local' — uses _passwordVisible with setState(() => _passwordVisible = !_passwordVisible) and FocusNode for focus handling."
+    },
+    {
+      "text": "before_after_example: Muestra ejemplo antes/después de refactorizar (qué provider quitar y cómo reemplazarlo)",
+      "passed": true,
+      "evidence": "'Antes: El problema en código' shows nameFocusedProvider, emailFocusedProvider, passwordVisibleProvider marked with ❌, then 'Después: La solución correcta' with Paso 1 listing exactly which providers to delete and Paso 2 showing ConsumerStatefulWidget replacement."
+    },
+    {
+      "text": "consumer_stateful: Menciona ConsumerStatefulWidget para combinar Riverpod con estado local",
+      "passed": true,
+      "evidence": "Code in 'Después' section: 'class ProfileScreen extends ConsumerStatefulWidget' with ConsumerState<ProfileScreen> combining local state (_passwordVisible, FocusNodes) and ref.watch(userProfileProvider)."
+    },
+    {
+      "text": "no_overuse_riverpod: No sugiere usar Riverpod para estado trivial de UI — respeta la filosofía 'solo cuando es necesario'",
+      "passed": true,
+      "evidence": "'La pregunta clave antes de crear cualquier provider es: ¿este estado necesita ser compartido fuera de este widget? Si la respuesta es no, Riverpod no debería estar ahí.' Conclusion: 'un solo AsyncNotifierProvider para los datos del usuario es todo lo que necesitas de Riverpod.'"
+    }
+  ],
+  "pass_count": 5,
+  "total_count": 5,
+  "pass_rate": 1.0,
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

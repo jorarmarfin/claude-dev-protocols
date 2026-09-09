@@ -1,0 +1,323 @@
+{
+  "metadata": {
+    "skill_name": "flutter-expert",
+    "skill_path": "<path/to/skill>",
+    "executor_model": "<model-name>",
+    "analyzer_model": "<model-name>",
+    "timestamp": "2026-04-03T19:19:50Z",
+    "evals_run": [
+      0,
+      1,
+      2
+    ],
+    "runs_per_configuration": 3
+  },
+  "runs": [
+    {
+      "eval_id": 0,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 81.1,
+        "tokens": 16522,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "skeleton_mentioned: Menciona skeleton screens o shimmer como soluci\u00f3n principal (no solo spinner mejorado)",
+          "passed": true,
+          "evidence": "Section 1 is titled '1. Skeleton screens (la mejora m\u00e1s impactante)' and presents both the `skeletonizer` package and manual `shimmer` as primary solutions, explicitly contrasting them against showing a spinner."
+        },
+        {
+          "text": "code_example: Incluye c\u00f3digo Flutter concreto y funcional (no solo pseudoc\u00f3digo)",
+          "passed": true,
+          "evidence": "Multiple complete functional Dart snippets including a full `ProductsScreen` ConsumerWidget using `Skeletonizer`, a `ProductCardSkeleton` with `Shimmer.fromColors`, a `@freezed` Product model with placeholder factory, and a fully integrated example at the end."
+        },
+        {
+          "text": "explains_why: Explica por qu\u00e9 skeleton es mejor UX que CircularProgressIndicator",
+          "passed": true,
+          "evidence": "'El cerebro humano percibe el skeleton como \"progreso\". El usuario ve la estructura de lo que va a aparecer, lo que reduce la ansiedad de espera. Apple y Google lo usan en sus apps nativas por esta raz\u00f3n.'"
+        },
+        {
+          "text": "riverpod_when_method: Menciona .when() de AsyncValue o manejo de estados loading/error/data con Riverpod",
+          "passed": true,
+          "evidence": "Uses `asyncProducts.when(loading: () => ..., error: (e, _) => ..., data: (products) => ...)` with `AsyncNotifierProvider` and Riverpod in both the initial example and the full integrated example."
+        },
+        {
+          "text": "caching_mentioned: Menciona cach\u00e9 local (keepAlive, Hive, SharedPrefs, o stale-while-revalidate)",
+          "passed": true,
+          "evidence": "Section 3 'Cachear los datos para que la pr\u00f3xima vez sea instant\u00e1neo' explicitly covers `ref.keepAlive()`, Hive, SharedPreferences, and the stale-while-revalidate pattern with a concrete code example."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 112.0,
+        "tokens": 19165,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "hero_widget: Usa Hero widget con tag \u00fanico por producto",
+          "passed": true,
+          "evidence": "Hero(tag: 'product-image-${product.id}', ...) used in both list and detail screens with unique id-based tag"
+        },
+        {
+          "text": "covers_both_screens: Muestra c\u00f3digo tanto de la pantalla de lista como del detalle",
+          "passed": true,
+          "evidence": "Full code provided for ProductListScreen (product_list_screen.dart) and ProductDetailScreen (product_detail_screen.dart) with complete widget trees"
+        },
+        {
+          "text": "custom_transition: Usa PageRouteBuilder o CustomTransitionPage (no solo MaterialPageRoute por defecto)",
+          "passed": true,
+          "evidence": "PageRouteBuilder used in _buildPageRoute() with transitionDuration: const Duration(milliseconds: 450) and custom transitionsBuilder with FadeTransition + SlideTransition. Also shows CustomTransitionPage variant for go_router."
+        },
+        {
+          "text": "curve_specified: Especifica curvas de animaci\u00f3n (Curves.easeOut u otras espec\u00edficas)",
+          "passed": true,
+          "evidence": "CurvedAnimation(parent: animation, curve: Curves.easeOut) used in both the route transition and the detail screen content animation controller"
+        },
+        {
+          "text": "explains_clip_placement: Explica o muestra correctamente el ClipRRect dentro del Hero para interpolar border radius",
+          "passed": true,
+          "evidence": "Section '4. Por qu\u00e9 ClipRRect va dentro del Hero en la lista y no fuera' explicitly states: 'Si pones el ClipRRect fuera del Hero, Flutter no puede interpolar el radio de esquinas durante el vuelo \u2014 la imagen har\u00e1 un flash o mostrar\u00e1 esquinas raras durante la transici\u00f3n. Al ponerlo dentro, el Hero lo incluye en la animaci\u00f3n y puedes ver c\u00f3mo las esquinas redondeadas se abren suavemente'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "with_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 78.2,
+        "tokens": 16302,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "decision_table_or_guide: Incluye tabla o gu\u00eda de decisi\u00f3n clara: cu\u00e1ndo usar Riverpod vs setState vs ValueNotifier",
+          "passed": true,
+          "evidence": "Table at the start of the response maps state types to tools: 'TextField enfocado, visible/oculto, tab activo \u2192 setState en StatefulWidget', 'Contador local, toggle simple \u2192 ValueNotifier + ValueListenableBuilder', 'Datos del usuario desde API \u2192 AsyncNotifierProvider', etc."
+        },
+        {
+          "text": "setstate_recommended: Recomienda setState o StatefulWidget para estado local de UI (foco, toggles)",
+          "passed": true,
+          "evidence": "'Paso 2: Convierte la pantalla a StatefulWidget para el estado local' \u2014 uses _passwordVisible with setState(() => _passwordVisible = !_passwordVisible) and FocusNode for focus handling."
+        },
+        {
+          "text": "before_after_example: Muestra ejemplo antes/despu\u00e9s de refactorizar (qu\u00e9 provider quitar y c\u00f3mo reemplazarlo)",
+          "passed": true,
+          "evidence": "'Antes: El problema en c\u00f3digo' shows nameFocusedProvider, emailFocusedProvider, passwordVisibleProvider marked with \u274c, then 'Despu\u00e9s: La soluci\u00f3n correcta' with Paso 1 listing exactly which providers to delete and Paso 2 showing ConsumerStatefulWidget replacement."
+        },
+        {
+          "text": "consumer_stateful: Menciona ConsumerStatefulWidget para combinar Riverpod con estado local",
+          "passed": true,
+          "evidence": "Code in 'Despu\u00e9s' section: 'class ProfileScreen extends ConsumerStatefulWidget' with ConsumerState<ProfileScreen> combining local state (_passwordVisible, FocusNodes) and ref.watch(userProfileProvider)."
+        },
+        {
+          "text": "no_overuse_riverpod: No sugiere usar Riverpod para estado trivial de UI \u2014 respeta la filosof\u00eda 'solo cuando es necesario'",
+          "passed": true,
+          "evidence": "'La pregunta clave antes de crear cualquier provider es: \u00bfeste estado necesita ser compartido fuera de este widget? Si la respuesta es no, Riverpod no deber\u00eda estar ah\u00ed.' Conclusion: 'un solo AsyncNotifierProvider para los datos del usuario es todo lo que necesitas de Riverpod.'"
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 0,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 68.1,
+        "tokens": 12964,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "skeleton_mentioned: Menciona skeleton screens o shimmer como soluci\u00f3n principal (no solo spinner mejorado)",
+          "passed": true,
+          "evidence": "Section 1 is titled '1. Skeleton Loading (Shimmer Effect) \u2014 Recomendado' and is the first and primary recommendation, implementing the `shimmer` package with a full custom skeleton list widget."
+        },
+        {
+          "text": "code_example: Incluye c\u00f3digo Flutter concreto y funcional (no solo pseudoc\u00f3digo)",
+          "passed": true,
+          "evidence": "Includes complete functional Dart code: a full `StatefulWidget` with `FutureBuilder`, a `_buildSkeletonItem()` using `Shimmer.fromColors`, a `ProductRepository` with `SharedPreferences` caching, and an `AnimatedProductCard` with `AnimationController`."
+        },
+        {
+          "text": "explains_why: Explica por qu\u00e9 skeleton es mejor UX que CircularProgressIndicator",
+          "passed": false,
+          "evidence": "The problem section lists reasons why CircularProgressIndicator is bad ('el usuario no sabe cu\u00e1nto tiempo faltar\u00e1', 'pantalla vac\u00eda y rota'), but the skeleton section only says 'El usuario entiende de inmediato la estructura de lo que va a aparecer' without a direct, substantive explanation of why skeleton is psychologically or perceptually superior."
+        },
+        {
+          "text": "riverpod_when_method: Menciona .when() de AsyncValue o manejo de estados loading/error/data con Riverpod",
+          "passed": true,
+          "evidence": "Section 5 'Usando Riverpod o BLoC' shows `productsAsync.when(loading: () => _buildSkeletonList(), error: (error, stack) => _buildErrorWidget(error), data: (products) => _buildProductList(products))` using `FutureProvider`."
+        },
+        {
+          "text": "caching_mentioned: Menciona cach\u00e9 local (keepAlive, Hive, SharedPrefs, o stale-while-revalidate)",
+          "passed": true,
+          "evidence": "Section 3 'Cach\u00e9 Local con shared_preferences o hive' implements a full `ProductRepository` with `SharedPreferences`, cache duration validation, and a stale-while-revalidate pattern labeled explicitly as such."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 1,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 0.8,
+        "passed": 4,
+        "failed": 1,
+        "total": 5,
+        "time_seconds": 75.4,
+        "tokens": 13346,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "hero_widget: Usa Hero widget con tag \u00fanico por producto",
+          "passed": true,
+          "evidence": "Hero(tag: 'product-image-${product.id}', ...) used in both ProductCard widget and ProductDetailScreen with matching unique id-based tags"
+        },
+        {
+          "text": "covers_both_screens: Muestra c\u00f3digo tanto de la pantalla de lista como del detalle",
+          "passed": true,
+          "evidence": "Full code provided for ProductListScreen (product_list_screen.dart), ProductCard widget, and ProductDetailScreen (product_detail_screen.dart)"
+        },
+        {
+          "text": "custom_transition: Usa PageRouteBuilder o CustomTransitionPage (no solo MaterialPageRoute por defecto)",
+          "passed": true,
+          "evidence": "PageRouteBuilder used with transitionDuration: const Duration(milliseconds: 450) and FadeTransition in transitionsBuilder inside ProductCard.onTap"
+        },
+        {
+          "text": "curve_specified: Especifica curvas de animaci\u00f3n (Curves.easeOut u otras espec\u00edficas)",
+          "passed": true,
+          "evidence": "CurvedAnimation(parent: animation, curve: Curves.easeInOut) used in FadeTransition inside the PageRouteBuilder transitionsBuilder"
+        },
+        {
+          "text": "explains_clip_placement: Explica o muestra correctamente el ClipRRect dentro del Hero para interpolar border radius",
+          "passed": false,
+          "evidence": "The response uses flightShuttleBuilder to animate ClipRRect border radius during flight, which is technically valid, but never explains the critical rule about ClipRRect placement (inside vs outside the Hero child). The summary only says 'flightShuttleBuilder es el lugar correcto para interpolar propiedades visuales durante el vuelo' without addressing why placing ClipRRect outside the Hero child causes a flash or incorrect clipping."
+        }
+      ],
+      "notes": []
+    },
+    {
+      "eval_id": 2,
+      "configuration": "without_skill",
+      "run_number": 1,
+      "result": {
+        "pass_rate": 1.0,
+        "passed": 5,
+        "failed": 0,
+        "total": 5,
+        "time_seconds": 74.2,
+        "tokens": 12867,
+        "tool_calls": 0,
+        "errors": 0
+      },
+      "expectations": [
+        {
+          "text": "decision_table_or_guide: Incluye tabla o gu\u00eda de decisi\u00f3n clara: cu\u00e1ndo usar Riverpod vs setState vs ValueNotifier",
+          "passed": true,
+          "evidence": "Table 'Clasificaci\u00f3n del estado: \u00bfQu\u00e9 va d\u00f3nde?' maps state types to tools: 'Estado ef\u00edmero/local de UI \u2192 StatefulWidget + variables locales', 'Estado global/compartido \u2192 Riverpod', 'Datos asincr\u00f3nicos \u2192 Riverpod (FutureProvider, AsyncNotifierProvider)', etc."
+        },
+        {
+          "text": "setstate_recommended: Recomienda setState o StatefulWidget para estado local de UI (foco, toggles)",
+          "passed": true,
+          "evidence": "'Usa setState / StatefulWidget cuando: El estado solo importa dentro de ese widget... El estado es ef\u00edmero: foco, hover, animaciones, visibilidad.' Code example uses setState(() => _isPasswordVisible = !_isPasswordVisible) with comment '// setState local, \u00a1no un provider!'"
+        },
+        {
+          "text": "before_after_example: Muestra ejemplo antes/despu\u00e9s de refactorizar (qu\u00e9 provider quitar y c\u00f3mo reemplazarlo)",
+          "passed": true,
+          "evidence": "'Versi\u00f3n sobre-ingeniada (MAL)' shows firstNameFocusedProvider, isPasswordVisibleProvider, etc. Then 'Versi\u00f3n simplificada y correcta (BIEN)' replaces them with ConsumerStatefulWidget using local state variables and FocusNodes."
+        },
+        {
+          "text": "consumer_stateful: Menciona ConsumerStatefulWidget para combinar Riverpod con estado local",
+          "passed": true,
+          "evidence": "'class ProfilePage extends ConsumerStatefulWidget' with '_ProfilePageState extends ConsumerState<ProfilePage>' combining local FocusNodes, TextEditingControllers, bool _isPasswordVisible with ref.watch(userProfileProvider)."
+        },
+        {
+          "text": "no_overuse_riverpod: No sugiere usar Riverpod para estado trivial de UI \u2014 respeta la filosof\u00eda 'solo cuando es necesario'",
+          "passed": true,
+          "evidence": "Conclusion: 'Usar Riverpod para el foco de un TextField no es \"m\u00e1s profesional\" \u2014 es sobre-ingenier\u00eda que dificulta el mantenimiento y degrada el rendimiento.' Pattern diagram labels local state clearly as '[local]' vs Riverpod as '[Riverpod]'."
+        }
+      ],
+      "notes": []
+    }
+  ],
+  "run_summary": {
+    "with_skill": {
+      "pass_rate": {
+        "mean": 1.0,
+        "stddev": 0.0,
+        "min": 1.0,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 90.4333,
+        "stddev": 18.7335,
+        "min": 78.2,
+        "max": 112.0
+      },
+      "tokens": {
+        "mean": 17329.6667,
+        "stddev": 1593.2471,
+        "min": 16302,
+        "max": 19165
+      }
+    },
+    "without_skill": {
+      "pass_rate": {
+        "mean": 0.8667,
+        "stddev": 0.1155,
+        "min": 0.8,
+        "max": 1.0
+      },
+      "time_seconds": {
+        "mean": 72.5667,
+        "stddev": 3.9145,
+        "min": 68.1,
+        "max": 75.4
+      },
+      "tokens": {
+        "mean": 13059.0,
+        "stddev": 253.237,
+        "min": 12867,
+        "max": 13346
+      }
+    },
+    "delta": {
+      "pass_rate": "+0.13",
+      "time_seconds": "+17.9",
+      "tokens": "+4271"
+    }
+  },
+  "notes": []
+}

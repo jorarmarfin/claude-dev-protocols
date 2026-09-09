@@ -1,0 +1,40 @@
+{
+  "eval_id": 1,
+  "run_type": "with_skill",
+  "expectations": [
+    {
+      "text": "hero_widget: Usa Hero widget con tag único por producto",
+      "passed": true,
+      "evidence": "Hero(tag: 'product-image-${product.id}', ...) used in both list and detail screens with unique id-based tag"
+    },
+    {
+      "text": "covers_both_screens: Muestra código tanto de la pantalla de lista como del detalle",
+      "passed": true,
+      "evidence": "Full code provided for ProductListScreen (product_list_screen.dart) and ProductDetailScreen (product_detail_screen.dart) with complete widget trees"
+    },
+    {
+      "text": "custom_transition: Usa PageRouteBuilder o CustomTransitionPage (no solo MaterialPageRoute por defecto)",
+      "passed": true,
+      "evidence": "PageRouteBuilder used in _buildPageRoute() with transitionDuration: const Duration(milliseconds: 450) and custom transitionsBuilder with FadeTransition + SlideTransition. Also shows CustomTransitionPage variant for go_router."
+    },
+    {
+      "text": "curve_specified: Especifica curvas de animación (Curves.easeOut u otras específicas)",
+      "passed": true,
+      "evidence": "CurvedAnimation(parent: animation, curve: Curves.easeOut) used in both the route transition and the detail screen content animation controller"
+    },
+    {
+      "text": "explains_clip_placement: Explica o muestra correctamente el ClipRRect dentro del Hero para interpolar border radius",
+      "passed": true,
+      "evidence": "Section '4. Por qué ClipRRect va dentro del Hero en la lista y no fuera' explicitly states: 'Si pones el ClipRRect fuera del Hero, Flutter no puede interpolar el radio de esquinas durante el vuelo — la imagen hará un flash o mostrará esquinas raras durante la transición. Al ponerlo dentro, el Hero lo incluye en la animación y puedes ver cómo las esquinas redondeadas se abren suavemente'"
+    }
+  ],
+  "pass_count": 5,
+  "total_count": 5,
+  "pass_rate": 1.0,
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

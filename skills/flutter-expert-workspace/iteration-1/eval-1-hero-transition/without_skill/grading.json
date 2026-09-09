@@ -1,0 +1,34 @@
+{
+  "eval_id": 1,
+  "run_type": "without_skill",
+  "expectations": [
+    {
+      "text": "hero_widget: Usa Hero widget con tag único por producto",
+      "passed": true,
+      "evidence": "Hero(tag: 'product-image-${product.id}', ...) used in both ProductCard widget and ProductDetailScreen with matching unique id-based tags"
+    },
+    {
+      "text": "covers_both_screens: Muestra código tanto de la pantalla de lista como del detalle",
+      "passed": true,
+      "evidence": "Full code provided for ProductListScreen (product_list_screen.dart), ProductCard widget, and ProductDetailScreen (product_detail_screen.dart)"
+    },
+    {
+      "text": "custom_transition: Usa PageRouteBuilder o CustomTransitionPage (no solo MaterialPageRoute por defecto)",
+      "passed": true,
+      "evidence": "PageRouteBuilder used with transitionDuration: const Duration(milliseconds: 450) and FadeTransition in transitionsBuilder inside ProductCard.onTap"
+    },
+    {
+      "text": "curve_specified: Especifica curvas de animación (Curves.easeOut u otras específicas)",
+      "passed": true,
+      "evidence": "CurvedAnimation(parent: animation, curve: Curves.easeInOut) used in FadeTransition inside the PageRouteBuilder transitionsBuilder"
+    },
+    {
+      "text": "explains_clip_placement: Explica o muestra correctamente el ClipRRect dentro del Hero para interpolar border radius",
+      "passed": false,
+      "evidence": "The response uses flightShuttleBuilder to animate ClipRRect border radius during flight, which is technically valid, but never explains the critical rule about ClipRRect placement (inside vs outside the Hero child). The summary only says 'flightShuttleBuilder es el lugar correcto para interpolar propiedades visuales durante el vuelo' without addressing why placing ClipRRect outside the Hero child causes a flash or incorrect clipping."
+    }
+  ],
+  "pass_count": 4,
+  "total_count": 5,
+  "pass_rate": 0.8
+}

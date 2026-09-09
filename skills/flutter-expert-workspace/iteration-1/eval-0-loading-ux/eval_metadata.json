@@ -1,0 +1,1 @@
+{"eval_id": 0, "eval_name": "loading-ux-improvement", "prompt": "Tengo una lista de productos que se carga desde una API. Al entrar a la pantalla tarda unos segundos en cargar y el usuario solo ve un CircularProgressIndicator. ¿Cómo lo mejoro?", "assertions": []}

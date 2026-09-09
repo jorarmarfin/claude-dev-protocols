@@ -1,0 +1,104 @@
+{
+  "skill_name": "flutter-expert",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Tengo una lista de productos que se carga desde una API. Al entrar a la pantalla tarda unos segundos en cargar y el usuario solo ve un CircularProgressIndicator. ¿Cómo lo mejoro?",
+      "expected_output": "Explicación de skeleton screens / shimmer, código Flutter concreto con CachedNetworkImage o Skeletonizer, manejo correcto de AsyncValue con Riverpod si aplica, y justificación de por qué es mejor experiencia que un spinner.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "skeleton_mentioned",
+          "description": "Menciona skeleton screens o shimmer como solución principal (no solo spinner mejorado)",
+          "type": "contains_concept"
+        },
+        {
+          "id": "code_example",
+          "description": "Incluye código Flutter concreto y funcional (no solo pseudocódigo)",
+          "type": "has_code"
+        },
+        {
+          "id": "explains_why",
+          "description": "Explica por qué skeleton es mejor UX que CircularProgressIndicator",
+          "type": "reasoning_present"
+        },
+        {
+          "id": "riverpod_when_method",
+          "description": "Menciona .when() de AsyncValue o manejo de estados loading/error/data con Riverpod",
+          "type": "contains_concept"
+        },
+        {
+          "id": "caching_mentioned",
+          "description": "Menciona caché local (keepAlive, Hive, SharedPrefs, o stale-while-revalidate)",
+          "type": "contains_concept"
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Quiero hacer una pantalla de detalle de producto que tenga una imagen que se expanda desde la lista con una transición suave, tipo la que usa la App Store de Apple.",
+      "expected_output": "Implementación con Hero widget, go_router o Navigator con CustomTransitionPage, código concreto de la lista y el detalle, y explicación de cómo hacer que la transición se sienta premium.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "hero_widget",
+          "description": "Usa Hero widget con tag único por producto",
+          "type": "contains_concept"
+        },
+        {
+          "id": "covers_both_screens",
+          "description": "Muestra código tanto de la pantalla de lista como del detalle",
+          "type": "completeness"
+        },
+        {
+          "id": "custom_transition",
+          "description": "Usa PageRouteBuilder o CustomTransitionPage (no solo MaterialPageRoute por defecto)",
+          "type": "contains_concept"
+        },
+        {
+          "id": "curve_specified",
+          "description": "Especifica curvas de animación (Curves.easeOut u otras específicas)",
+          "type": "contains_concept"
+        },
+        {
+          "id": "explains_clip_placement",
+          "description": "Explica o muestra correctamente el ClipRRect dentro del Hero para interpolar border radius",
+          "type": "contains_concept"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Mi app Flutter tiene una pantalla de perfil con datos del usuario. Actualmente uso Riverpod para absolutamente todo — hasta el estado de si un TextField está enfocado. ¿Cómo lo simplifico?",
+      "expected_output": "Guía clara de cuándo usar Riverpod vs setState vs ValueNotifier, refactor del código de perfil mostrando qué quitar de Riverpod y por qué, con ejemplos concretos de cada alternativa.",
+      "files": [],
+      "assertions": [
+        {
+          "id": "decision_table_or_guide",
+          "description": "Incluye tabla o guía de decisión clara: cuándo usar Riverpod vs setState vs ValueNotifier",
+          "type": "contains_concept"
+        },
+        {
+          "id": "setstate_recommended",
+          "description": "Recomienda setState o StatefulWidget para estado local de UI (foco, toggles)",
+          "type": "contains_concept"
+        },
+        {
+          "id": "before_after_example",
+          "description": "Muestra ejemplo antes/después de refactorizar (qué provider quitar y cómo reemplazarlo)",
+          "type": "completeness"
+        },
+        {
+          "id": "consumer_stateful",
+          "description": "Menciona ConsumerStatefulWidget para combinar Riverpod con estado local",
+          "type": "contains_concept"
+        },
+        {
+          "id": "no_overuse_riverpod",
+          "description": "No sugiere usar Riverpod para estado trivial de UI — respeta la filosofía 'solo cuando es necesario'",
+          "type": "negative_check"
+        }
+      ]
+    }
+  ]
+}

@@ -22,23 +22,32 @@ en el camino salvo que estés genuinamente bloqueado.
 3. Lee sus entregables completos: backend, frontend, tests,
    documentación, requisitos previos.
 4. Detecta el stack real del proyecto (composer.json, package.json,
-   requirements.txt, pubspec.yaml) y usa el skill correspondiente si
-   existe uno relevante en este set: `flask-blueprint-expert` (Flask),
-   `laravel-composer-kit` (paquetes Laravel/Filament), `project-scaffold`
-   (si la fase es de setup inicial). Invócalos con la herramienta Skill
-   cuando su convención aplique — no reinventes patrones que ya están
-   documentados ahí.
-5. Si la fase es sobre Flutter, usa las convenciones de `flutter-expert`
-   si está disponible en este entorno.
+   requirements.txt/pyproject.toml, pubspec.yaml).
+5. **No asumas una lista fija de skills.** Al inicio de tu turno tienes
+   la lista de skills disponibles en este entorno (aparece en el
+   contexto del sistema como "The following skills are available for
+   use with the Skill tool"). Revísala y elige el/los que su
+   `description` indique que aplican al stack detectado y al tipo de
+   trabajo de la fase (scaffold, convenciones de framework, paquetes a
+   instalar, checklist de implementación, etc.) — invócalos con la
+   herramienta Skill en vez de reinventar una convención que ya está
+   documentada ahí. Si no hay ninguno que calce, sigue sin uno: no
+   fuerces un skill que no aplica solo por usar alguno.
+   Esto es a propósito dinámico: cuando se agreguen skills nuevos al
+   entorno (Filament, otro stack, etc.) los debes poder usar sin que
+   nadie tenga que editar este agente.
 
 ## Cómo desglosar el trabajo
 
-Aplica la misma lógica de `phase-implementation-checklist`: contrato/tipos
-antes que implementación, lógica antes que UI, todos los estados
-(loading/error/vacío/éxito) cubiertos, tests después de cada pieza
-funcional, no al final de todo. Usa TodoWrite para trackear los pasos de
-la fase mientras trabajas — te ayuda a no perder progreso si la fase es
-larga.
+Si el skill `phase-implementation-checklist` está disponible y el stack
+lo cubre (React/Astro/backend genérico), invócalo para obtener el
+desglose granular antes de escribir código. Si no está disponible o no
+cubre el stack de esta fase, sigue el mismo principio de todas formas:
+contrato/tipos antes que implementación, lógica antes que UI, todos los
+estados (loading/error/vacío/éxito) cubiertos, tests después de cada
+pieza funcional, no al final de todo. Usa TodoWrite para trackear los
+pasos de la fase mientras trabajas — te ayuda a no perder progreso si la
+fase es larga.
 
 ## Reglas de ejecución
 

@@ -1,0 +1,40 @@
+{
+  "eval_id": 0,
+  "run_type": "with_skill",
+  "expectations": [
+    {
+      "text": "skeleton_mentioned: Menciona skeleton screens o shimmer como solución principal (no solo spinner mejorado)",
+      "passed": true,
+      "evidence": "Section 1 is titled '1. Skeleton screens (la mejora más impactante)' and presents both the `skeletonizer` package and manual `shimmer` as primary solutions, explicitly contrasting them against showing a spinner."
+    },
+    {
+      "text": "code_example: Incluye código Flutter concreto y funcional (no solo pseudocódigo)",
+      "passed": true,
+      "evidence": "Multiple complete functional Dart snippets including a full `ProductsScreen` ConsumerWidget using `Skeletonizer`, a `ProductCardSkeleton` with `Shimmer.fromColors`, a `@freezed` Product model with placeholder factory, and a fully integrated example at the end."
+    },
+    {
+      "text": "explains_why: Explica por qué skeleton es mejor UX que CircularProgressIndicator",
+      "passed": true,
+      "evidence": "'El cerebro humano percibe el skeleton como \"progreso\". El usuario ve la estructura de lo que va a aparecer, lo que reduce la ansiedad de espera. Apple y Google lo usan en sus apps nativas por esta razón.'"
+    },
+    {
+      "text": "riverpod_when_method: Menciona .when() de AsyncValue o manejo de estados loading/error/data con Riverpod",
+      "passed": true,
+      "evidence": "Uses `asyncProducts.when(loading: () => ..., error: (e, _) => ..., data: (products) => ...)` with `AsyncNotifierProvider` and Riverpod in both the initial example and the full integrated example."
+    },
+    {
+      "text": "caching_mentioned: Menciona caché local (keepAlive, Hive, SharedPrefs, o stale-while-revalidate)",
+      "passed": true,
+      "evidence": "Section 3 'Cachear los datos para que la próxima vez sea instantáneo' explicitly covers `ref.keepAlive()`, Hive, SharedPreferences, and the stale-while-revalidate pattern with a concrete code example."
+    }
+  ],
+  "pass_count": 5,
+  "total_count": 5,
+  "pass_rate": 1.0,
+  "summary": {
+    "passed": 5,
+    "failed": 0,
+    "total": 5,
+    "pass_rate": 1.0
+  }
+}

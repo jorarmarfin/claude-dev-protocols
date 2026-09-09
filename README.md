@@ -95,6 +95,7 @@ usa las convenciones de `flask-blueprint-expert` si detecta ese stack.
 | `laravel-composer-kit` | Listo | No | Instala/configura Filament, Shield, Excel, PDF, log monitor, ubigeo (greenter solo bajo pedido explícito). Basado en composer.json de SisLibun |
 | `flutter-new-app` | Listo (ya en uso) | Sí (origen) | Scaffold de proyecto Flutter nuevo, con templates. Este fue copiado *desde* `~/.claude/skills/` |
 | `blog-article-publisher` | Listo (ya en uso) | Sí, en `~/.codex/skills/` (Codex, no Claude) | Copiado desde Codex para tenerlo también giteado aquí |
+| `docker-wodby-deploy` | Listo | Sí | Genera `compose.yml`, `.env`, CI/CD (GitHub Actions/Bitbucket) y `STEPS.md` para desplegar Drupal/Laravel/WordPress/Moodle con imágenes Wodby, volúmenes en la raíz del proyecto |
 
 ## Estado de los agents
 
