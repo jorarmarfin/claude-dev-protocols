@@ -9,8 +9,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - ${DB_DATA_PATH}:/var/lib/mysql
-      - ${BACKUPS_PATH}:/backups
+      - ./data/mariadb:/var/lib/mysql
 
   php:
     image: wodby/wordpress-php:${PHP_TAG}
@@ -24,8 +23,7 @@ services:
       DB_DRIVER: mysql
       PHP_XDEBUG: ${PHP_XDEBUG:-0}
     volumes:
-      - ${PROJECT_ROOT}:/var/www/html
-      - ${BACKUPS_PATH}:/backups
+      - ./app:/var/www/html
     depends_on:
       - mariadb
 
@@ -40,7 +38,7 @@ services:
       NGINX_BACKEND_HOST: php
       NGINX_VHOST_PRESET: wordpress
     volumes:
-      - ${PROJECT_ROOT}:/var/www/html
+      - ./app:/var/www/html
     ports:
       - "${HTTP_PORT}:8080"
 

@@ -53,6 +53,12 @@ docker compose pull
 docker compose up -d --remove-orphans
 ```
 
+## Ver puertos libres/ocupados del servidor (antes de fijar HTTP_PORT/ADMINER_PORT/etc. en .env)
+
+```bash
+sudo ss -tulpn | grep LISTEN
+```
+
 {{STACK_COMMANDS}}
 
 ## Notas

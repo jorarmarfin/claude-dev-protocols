@@ -8,15 +8,13 @@ services:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-    command: --innodb_file_per_table=1 --innodb_file_format=barracuda --innodb_large_prefix=1
     volumes:
       - ./data/mariadb:/var/lib/mysql
 
-  # NOTA: wodby no publica una imagen oficial "moodle-php" con la misma
+  # NOTA: wodby no publica una imagen oficial "joomla-php" con la misma
   # regularidad que drupal-php/wordpress-php. Verificar en
   # https://hub.docker.com/u/wodby cuál PHP_TAG existe antes de desplegar;
-  # como fallback usa wodby/php genérico (APP_TYPE no aplica) + ajustar
-  # php.ini a los requisitos de Moodle (max_input_vars, memory_limit, etc).
+  # como fallback usa wodby/php genérico (APP_TYPE no aplica).
   php:
     image: wodby/php:${PHP_TAG}
     container_name: "${PROJECT_NAME}_php"
@@ -28,11 +26,8 @@ services:
       DB_NAME: ${DB_NAME}
       DB_DRIVER: mysql
       PHP_XDEBUG: ${PHP_XDEBUG:-0}
-      PHP_MAX_INPUT_VARS: 5000
-      PHP_MEMORY_LIMIT: 256M
     volumes:
       - ./app:/var/www/html
-      - ./data/moodledata:/var/www/moodledata
     depends_on:
       - mariadb
 
@@ -66,15 +61,3 @@ services:
     container_name: "${PROJECT_NAME}_mailhog"
     ports:
       - "${MAILHOG_PORT}:8025"
-
-  cron:
-    image: wodby/php:${PHP_TAG}
-    container_name: "${PROJECT_NAME}_cron"
-    command: >
-      sh -c "while true; do php /var/www/html/admin/cli/cron.php; sleep 60; done"
-    volumes:
-      - ./app:/var/www/html
-      - ./data/moodledata:/var/www/moodledata
-    depends_on:
-      - mariadb
-      - php

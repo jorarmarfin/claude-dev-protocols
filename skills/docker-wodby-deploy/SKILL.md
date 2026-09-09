@@ -1,6 +1,6 @@
 ---
 name: docker-wodby-deploy
-description: Genera compose.yml, .env, la estructura scripts/setup.sh+bootstrap.sh, _specs/ versionado (tech.md/estructura.md) y README.md operativo, virtualhost (nginx o apache) con comandos certbot, pipeline de CI/CD (GitHub Actions o Bitbucket Pipelines) y STEPS.md/COMMANDS.md para desplegar con Docker proyectos Drupal, Laravel, WordPress o Moodle usando las imágenes de Wodby, mapeando siempre los volúmenes en la raíz del proyecto. Usar cuando el usuario pida "desplegar con docker", "compose.yml para [drupal|laravel|wordpress|moodle]", "dockerizar este proyecto con wodby", "virtualhost + certbot para este despliegue", o quiera armar CI/CD para un despliegue Docker de estos stacks. Para WordPress/Drupal con infraestructura propia (sin Wodby) usa el skill wp-drupal-scaffold en su lugar.
+description: Genera compose.yml, .env, virtualhost (nginx o apache) con comandos certbot, pipeline de CI/CD (GitHub Actions o Bitbucket Pipelines) y un archivo de pasos para desplegar con Docker proyectos Drupal, Laravel, WordPress, Moodle o Joomla usando las imágenes de Wodby, mapeando siempre el código en ./app y los datos persistentes en ./data dentro de la raíz del proyecto. Usar cuando el usuario pida "desplegar con docker", "compose.yml para [drupal|laravel|wordpress|moodle|joomla]", "dockerizar este proyecto con wodby", "virtualhost + certbot para este despliegue", o quiera armar CI/CD para un despliegue Docker de estos stacks.
 ---
 
 # Skill: Docker Wodby Deploy
@@ -10,30 +10,23 @@ description: Genera compose.yml, .env, la estructura scripts/setup.sh+bootstrap.
 Generar en la carpeta actual (la raíz del proyecto que se va a
 desplegar) todo lo necesario para levantarlo con Docker usando las
 imágenes de [Wodby](https://wodby.com/stacks/): `compose.yml`, `.env`
-(y `.env.example` versionable), la carpeta `scripts/` con `setup.sh`
-(prepara `.env`, carpetas de datos y certificado TLS local) y
-`bootstrap.sh` (post-provisioning idempotente vía CLI del stack: crear
-admin, flush de permalinks/cachés, etc.), `_specs/` versionado
-(`tech.md`, `estructura.md`), un `README.md` como fuente de verdad
-operativa (con tabla de accesos y de troubleshooting), opcionalmente el
-virtualhost del servidor (nginx o apache) con los comandos de certbot
-para HTTPS, el pipeline de CI/CD del proveedor elegido, un `STEPS.md`
-con los pasos concretos para levantar, verificar y desplegar, y un
-`COMMANDS.md` con comandos del día a día (entrar al contenedor,
-backup/restore de la DB, logs, reinicios).
-
-Esta estructura de carpetas (`scripts/`, `_specs/`, `README.md`
-operativo) es el mismo patrón de organización usado en el skill
-hermano `wp-drupal-scaffold` (infraestructura propia, sin Wodby) — aquí
-se aplica igual pero manteniendo las imágenes Wodby en `compose.yml`.
+(y `.env.example` versionable), opcionalmente el virtualhost del
+servidor (nginx o apache) con los comandos de certbot para HTTPS, el
+pipeline de CI/CD del proveedor elegido, un `STEPS.md` con los pasos
+concretos para levantar, verificar y desplegar, y un `COMMANDS.md` con
+comandos del día a día (entrar al contenedor, backup/restore de la DB,
+logs, reinicios).
 
 ## Triggers
 
-- "compose.yml para drupal/laravel/wordpress/moodle"
+- "compose.yml para drupal/laravel/wordpress/moodle/joomla"
 - "dockeriza este proyecto con wodby"
 - "quiero desplegar con docker"
 - "archivo de CI/CD para este despliegue" (en contexto de un proyecto
-  de estos 4 stacks)
+  de estos stacks)
+- "prepara/acomoda/adapta este proyecto a nuestro estándar (de
+  despliegue)" — dispara el modo migración/limpieza, no solo
+  generación (ver nota en el paso 1)
 
 ## Comportamiento
 
@@ -41,7 +34,7 @@ se aplica igual pero manteniendo las imágenes Wodby en `compose.yml`.
 
 En este orden, y sin generar nada hasta tener respuesta:
 
-1. **¿Qué proyecto vas a desplegar?** Drupal / Laravel / WordPress / Moodle
+1. **¿Qué proyecto vas a desplegar?** Drupal / Laravel / WordPress / Moodle / Joomla
 2. **Nombre del proyecto** (necesario ya en este punto: es lo que llena
    `PROJECT_NAME` en el `.env` que se genera en el paso 1, nombra los
    contenedores, y evita colisión si el usuario tiene varios stacks
@@ -85,6 +78,16 @@ En este orden, y sin generar nada hasta tener respuesta:
    instalación del vhost (paso 3), así que pregúntalo siempre aunque el
    usuario no vaya a generar CI/CD ni vhost en este momento — sirve
    igual como referencia en `STEPS.md`.
+8. **¿Vas a usar Adminer?** Sí/No — todos los templates de compose
+   incluyen el servicio `adminer` por default, pero en producción
+   suele ser mejor no exponerlo.
+   - Si es no: quita el servicio `adminer` completo del `compose.yml`
+     copiado (bloque `adminer:` y sus `depends_on` de otros servicios
+     si alguno lo tuviera) y quita `ADMINER_PORT`/`ADMINER_TAG` del
+     `.env`/`.env.example` generados. No dejes el servicio comentado
+     ni variables sueltas sin uso.
+   - Si es sí (default más común en staging/desarrollo): déjalo tal
+     cual trae el template.
 
 No preguntes por cosas que ya se puedan inferir del directorio (p. ej.
 si ya hay un `composer.json` con `laravel/framework`, no preguntes de
@@ -101,11 +104,13 @@ templates/
     laravel.compose.yml.tpl
     wordpress.compose.yml.tpl
     moodle.compose.yml.tpl
+    joomla.compose.yml.tpl
   env/
     drupal.env.tpl
     laravel.env.tpl
     wordpress.env.tpl
     moodle.env.tpl
+    joomla.env.tpl
   ci/
     github-actions-deploy.yml.tpl
     bitbucket-pipelines.yml.tpl
@@ -121,22 +126,54 @@ Copia el `.tpl` del stack elegido a la raíz del proyecto destino:
   por placeholders tipo `CAMBIA_ESTA_PASSWORD` — nunca commitear
   passwords reales)
 
-Todos los templates de compose mapean, dentro de la misma carpeta
-principal que contiene el `compose.yml`:
+Todos los templates de compose mapean el código del proyecto con un
+bind mount a `./app:/var/www/html` (el docroot vive en la subcarpeta
+`app/`, nunca en la raíz — así `compose.yml`, `docker/`, dumps SQL y
+backups quedan fuera del webroot) y los datos persistentes (bases de
+datos, `moodledata`, etc.) en `./data/...` — siempre dentro de la raíz
+del proyecto, nunca en volúmenes con nombre sueltos, para que un backup
+de carpeta se lleve todo.
 
-- El código del proyecto: `${PROJECT_ROOT}:/var/www/html` (por
-  default `./app`)
-- Los datos de MariaDB: `${DB_DATA_PATH}:/var/lib/mysql` (por default
-  `./mariadb/db-data`)
-- Moodle además: `${MOODLEDATA_PATH}:/var/www/moodledata` (por default
-  `./moodledata`)
-- Backups de archivos y BD: `${BACKUPS_PATH}:/backups` (por default
-  `./backups`), montado tanto en el contenedor de la app (`php`) como
-  en el de la base de datos (`mariadb`)
+**Si el usuario pide "prepara/acomoda/adapta este proyecto a nuestro
+estándar"** (no solo "genera el compose.yml"), esto es una migración de
+un proyecto existente al estándar, no una adición: identifica cada
+desviación y córrigela moviendo/renombrando/borrando lo viejo, dejando
+un solo estado final limpio — nunca los dos (el viejo y el nuevo)
+convivientes. Revisa al menos:
 
-Todo relativo al `compose.yml`, nunca en volúmenes con nombre sueltos
-gestionados por Docker fuera del proyecto, para que un backup de la
-carpeta principal se lleve todo (código, datos y respaldos).
+- **Docroot**: si el código fuente está en la raíz, en `public_html/`,
+  `htdocs/`, `web/`, etc. en vez de `app/` → `mv` a `app/` (no copiar
+  dejando el original), y actualiza toda referencia a la ruta vieja en
+  `compose.yml`, `.gitignore`, `STEPS.md`, `COMMANDS.md` y cualquier
+  config del propio stack que apunte a rutas absolutas del contenedor
+  (esas casi siempre no cambian porque ya son `/var/www/html`, pero
+  revisa igual).
+- **Config del stack con la carpeta vieja hardcodeada**: si algún
+  archivo de config (settings.php, wp-config.php, configuration.php,
+  config.php, .env de la app) referencia rutas o nombres que asumían la
+  carpeta vieja, actualízalo.
+- **Carpeta de infraestructura Docker**: todo lo relacionado a Docker
+  (vhost, extra.conf, .htpasswd, etc.) vive en `./docker/` — si existe
+  una carpeta `deploy/` u otro nombre suelto con el mismo propósito,
+  mueve su contenido a `./docker/` y borra la carpeta vieja.
+- **Volúmenes de datos**: si `compose.yml` usa un volumen con nombre de
+  Docker (bloque `volumes:` al final del archivo) para datos que deben
+  persistir (DB, uploads, etc.), migra a bind mount visible en
+  `./data/<servicio>/` y borra la declaración del volumen con nombre —
+  si el volumen viejo ya tiene datos y el contenedor no está corriendo,
+  puedes copiarlos con `docker run --rm -v <volumen_viejo>:/from -v
+  $(pwd)/data/<servicio>:/to alpine sh -c 'cp -a /from/. /to/'` antes de
+  quitar la referencia; si está corriendo, avisa al usuario y pide
+  confirmación antes de tocar el volumen en uso.
+- **Archivos/carpetas obsoletos que ya no aplican tras la migración**
+  (ej. un `compose.yml` viejo en un formato distinto, un `.env` con
+  variables que ya no existen en el template) — bórralos, no los dejes
+  como reliquia; si tienen datos que no estén ya respaldados en otro
+  lado, avisa antes de borrar.
+
+Termina esta limpieza siempre con `docker compose config` (o el
+`up -d` si el usuario lo pide) para confirmar que el resultado final
+arranca correctamente, no solo que los archivos quedaron bonitos.
 
 ### 2. Ajustar el `.env` con los valores reales
 
@@ -148,42 +185,6 @@ Reemplaza en el `.env` generado (no en `.env.example`):
 
 Verifica que `.env` esté en `.gitignore` del proyecto destino (créalo o
 añade la línea si falta) — `.env.example` sí se versiona.
-
-### 2.5 Estructura de carpetas: `scripts/`, `_specs/`, `README.md`
-
-Los templates viven en `templates/scripts/`, `templates/specs/` y
-`templates/README.md.tpl`:
-
-```
-templates/
-  scripts/
-    setup.sh.tpl
-    bootstrap.wordpress.sh.tpl
-    bootstrap.drupal.sh.tpl
-    bootstrap.laravel.sh.tpl
-    bootstrap.moodle.sh.tpl
-  specs/
-    tech.md.tpl
-    estructura.md.tpl
-  README.md.tpl
-```
-
-Copia y rellena placeholders (`{{PROJECT_NAME}}`, `{{STACK}}`, `{{DATE}}`):
-
-- `templates/scripts/setup.sh.tpl` → `./scripts/setup.sh` (`chmod +x`)
-- `templates/scripts/bootstrap.<stack>.sh.tpl` → `./scripts/bootstrap.sh`
-  (`chmod +x`) — usa el del stack elegido en el paso 0.1, descarta los otros
-- `templates/specs/tech.md.tpl` → `./_specs/tech.md`
-- `templates/specs/estructura.md.tpl` → `./_specs/estructura.md`
-- `templates/README.md.tpl` → `./README.md` (referencia a `STEPS.md` y
-  `COMMANDS.md` del paso 5-6, no los reemplaza)
-
-Si el usuario ya tiene overrides locales del stack (un `wp-config.local.php`,
-un `settings.local.php` de Drupal, un `php.ini` extra), colócalos en
-`docker/<servicio>/` y móntalos como volumen adicional en el servicio
-correspondiente del `compose.yml` — las imágenes Wodby no necesitan
-Dockerfile propio, así que `docker/` aquí es solo para estos overrides
-puntuales, no para reconstruir la imagen.
 
 ### 3. Virtualhost del servidor + certbot (solo si el usuario lo pidió en 0.6)
 
@@ -200,16 +201,20 @@ templates/vhost/
   default el mismo `HTTP_PORT` del `.env`, pero puede ser otro si el
   usuario está enlazando este dominio a un puerto distinto) al archivo
   destino:
-  - nginx → `./deploy/nginx/{{DOMAIN}}.conf` (el usuario lo copia a
+  - nginx → `./docker/nginx/{{DOMAIN}}.conf` (el usuario lo copia a
     `/etc/nginx/sites-available/` en el servidor real y enlaza en
     `sites-enabled`)
-  - apache → `./deploy/apache/{{DOMAIN}}.conf` (a
+  - apache → `./docker/apache/{{DOMAIN}}.conf` (a
     `/etc/apache2/sites-available/`)
+- Toda config relacionada a Docker vive bajo `./docker/` — es la
+  carpeta estándar del usuario para esto (nginx/extra.conf, .htpasswd,
+  y ahora también el vhost del host), nunca crear una carpeta `deploy/`
+  ni ninguna otra alterna para este propósito.
 - Ambos templates son reverse proxy hacia `127.0.0.1:{{HTTP_PORT}}`
   (el puerto que `compose.yml` expone del contenedor `nginx` de
   wodby) — el servidor web del host no sirve el docroot directamente.
 - No los coloques en `/etc/nginx` o `/etc/apache2` directamente — este
-  skill solo genera el archivo en el proyecto (`./deploy/...`); copiarlo
+  skill solo genera el archivo en el proyecto (`./docker/...`); copiarlo
   al sistema y recargar el servicio es un paso manual del usuario en el
   servidor (indícalo en `STEPS.md`, no lo ejecutes tú salvo que el
   usuario esté en ese mismo servidor y lo pida explícitamente).
@@ -243,9 +248,9 @@ Según lo elegido en el paso 0.4:
   en la raíz
 
 Ajusta el bloque de "post-deploy específico del stack" (migraciones/
-`drush updb`/`wp core update-db`/`admin/cli/upgrade.php`) dejando
-activo solo el comando del stack elegido, comentando los otros o
-eliminándolos.
+`drush updb`/`wp core update-db`/`admin/cli/upgrade.php`/actualización
+de extensiones Joomla vía backend) dejando activo solo el comando del
+stack elegido, comentando los otros o eliminándolos.
 
 Avisa al usuario qué secrets/variables debe configurar en el
 repositorio (`DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_SSH_KEY`,
@@ -260,6 +265,9 @@ Copia `templates/STEPS.md.tpl` a `./STEPS.md` en la raíz, rellenando:
 - `{{PROJECT_NAME}}`, `{{STACK}}`
 - `{{HTTP_PORT}}`, `{{ADMINER_PORT}}`, `{{MAILHOG_PORT}}` con los
   valores reales del `.env`
+- Si en 0.8 el usuario dijo que no usará Adminer, elimina del
+  `STEPS.md` generado la línea "Adminer (DB): http://localhost:...",
+  no la dejes con un puerto que ya no existe en el `.env`
 - `{{POST_STEPS}}` con los comandos específicos del stack elegido
   (instalación inicial de Drupal/WordPress/Moodle, o
   `artisan migrate`/`artisan key:generate` en Laravel)
@@ -288,19 +296,23 @@ rellenando `{{PROJECT_NAME}}`, `{{STACK}}`, `{{DB_USER}}`,
 - Laravel: `docker compose exec php php artisan tinker`, `artisan queue:restart`, `artisan cache:clear`
 - WordPress: `docker compose exec php wp cache flush`, `wp db export`
 - Moodle: `docker compose exec php php admin/cli/purge_caches.php`
+- Joomla: `docker compose exec php php cli/joomla.php cache:clear`, backup vía Akeeba o `mysqldump` manual
 
 Este archivo es para el día a día (entrar al contenedor, backup/restore
 de la DB, ver logs) — no lo confundas con `STEPS.md`, que es la guía de
 puesta en marcha inicial y despliegue.
 
+El template ya trae el comando `sudo ss -tulpn | grep LISTEN` para ver
+qué puertos están libres/ocupados en el servidor — el usuario lo
+necesita siempre antes de fijar `HTTP_PORT`/`ADMINER_PORT`/etc. en el
+`.env`, así que nunca lo quites de `COMMANDS.md`.
+
 ### 7. Resumen final
 
 Termina siempre listando qué archivos se crearon o modificaron
-(`compose.yml`, `.env`, `.env.example`, `scripts/setup.sh`,
-`scripts/bootstrap.sh`, `_specs/tech.md`, `_specs/estructura.md`,
-`README.md`, el archivo de CI/CD, `STEPS.md`, `COMMANDS.md`, cambios en
-`.gitignore`) y el próximo comando a correr (`./scripts/setup.sh &&
-docker compose up -d && ./scripts/bootstrap.sh`).
+(`compose.yml`, `.env`, `.env.example`, el archivo de CI/CD, `STEPS.md`,
+`COMMANDS.md`, cambios en `.gitignore`) y el próximo comando a correr
+(`docker compose up -d`).
 
 ## Instrucciones especiales
 
@@ -308,16 +320,19 @@ docker compose up -d && ./scripts/bootstrap.sh`).
   fijan una versión concreta; si el usuario no especifica, deja la que
   trae el `.tpl` y avísale que puede no ser la más reciente (sugiere
   verificar en https://hub.docker.com/u/wodby).
-- **Volúmenes siempre dentro de la carpeta principal del proyecto**
-  (`${PROJECT_ROOT}`, `${DB_DATA_PATH}`, `${MOODLEDATA_PATH}` en
-  Moodle, `${BACKUPS_PATH}`), nunca volúmenes con nombre gestionados
-  por Docker fuera del proyecto — es el requisito explícito del
-  usuario, para que todo (código, datos y backups) viva en una sola
-  carpeta portable junto al `compose.yml`.
-- **`${BACKUPS_PATH}` (`./backups` por default) se monta como
-  `/backups`** en el contenedor de la app y en el de la base de datos
-  — es donde van los dumps de BD y los backups de archivos; menciónalo
-  en `COMMANDS.md` al documentar los comandos de backup/restore.
+- **Código en `./app`, datos en `./data`** — ambos como carpetas
+  visibles dentro de la raíz del proyecto (nunca volúmenes con nombre
+  gestionados por Docker fuera del proyecto), para que todo (código +
+  datos) viva en una sola carpeta portable y se pueda respaldar con un
+  simple `cp`/`tar` de la carpeta. Cada servicio con estado persistente
+  (MariaDB en `./data/mariadb`, `moodledata` en `./data/moodledata`,
+  etc.) tiene su propia subcarpeta visible dentro de `./data/`, y esa
+  subcarpeta siempre se mapea con bind mount (`- ./data/<servicio>:<ruta
+  interna>`), nunca con un volumen nombrado de Docker — un volumen
+  nombrado solo se justifica cuando el dato es realmente efímero/interno
+  (ej. cache de Redis sin persistencia) y no necesita respaldo ni
+  portabilidad; en ese caso, ni siquiera declares un volumen, deja el
+  servicio sin `volumes:`.
 - **Moodle no tiene imagen oficial de wodby tan estable** como
   drupal-php/wordpress-php — el template usa `wodby/php` genérico y
   deja una nota; verifica con el usuario si prefiere una imagen

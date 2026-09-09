@@ -3,7 +3,7 @@
 ## 1. Requisitos previos
 
 - Docker y Docker Compose v2 instalados (`docker compose version`)
-- Código fuente del proyecto ya presente en esta carpeta (docroot en la raíz)
+- Código fuente del proyecto ya presente en `./app` (docroot)
 - Revisar y ajustar `.env` (passwords, puertos, tags de imagen)
 - Carpeta del proyecto en el servidor: `{{DEPLOY_PATH}}` (varía según
   cliente/servidor — confirmar que coincide con este valor antes de
