@@ -112,6 +112,7 @@ templates/
     wordpress.compose.yml.tpl
     moodle.compose.yml.tpl
     joomla.compose.yml.tpl
+    compose.prod.yml.tpl
   env/
     drupal.env.tpl
     laravel.env.tpl
@@ -128,10 +129,29 @@ templates/
 Copia el `.tpl` del stack elegido a la raíz del proyecto destino:
 
 - `templates/compose/<stack>.compose.yml.tpl` → `./compose.yml`
+- `templates/compose/compose.prod.yml.tpl` → `./compose.prod.yml`
+  (siempre, no solo si el usuario pidió virtualhost en 0.6 — lo usa el
+  día que promueva este mismo proyecto a producción, así ya lo tiene
+  listo)
 - `templates/env/<stack>.env.tpl` → `./.env` **y** `./.env.example`
   (mismo contenido, pero `.env.example` con los passwords reemplazados
   por placeholders tipo `CAMBIA_ESTA_PASSWORD` — nunca commitear
   passwords reales)
+
+**Dev/staging vs producción — quién puede ver el sitio por el puerto
+publicado:** `compose.yml` solo (`docker compose up -d`) publica los
+puertos del `nginx`/`adminer` en todas las interfaces (`0.0.0.0`), así
+que el sitio es alcanzable desde cualquier IP que llegue al host en
+ese puerto — es lo que se quiere en dev/staging, para poder abrirlo
+desde otra máquina de la red sin necesitar un dominio. Al agregar el
+override (`docker compose -f compose.yml -f compose.prod.yml up -d`),
+esos mismos puertos quedan atados a `127.0.0.1` — solo el propio
+servidor puede alcanzarlos, porque en producción el tráfico entra por
+el virtualhost del host (nginx/apache + certbot, ver paso 3) y el
+puerto del contenedor no debe quedar abierto a cualquiera. Explícale
+esto al usuario en el resumen final y en `STEPS.md` — es fácil asumir
+que "producción" implica agregar el override, y si el usuario nunca lo
+corre, seguirá expuesto en todas las interfaces sin darse cuenta.
 
 Todos los templates de compose mapean el código del proyecto con un
 bind mount a `./app:/var/www/html` (el docroot vive en la subcarpeta

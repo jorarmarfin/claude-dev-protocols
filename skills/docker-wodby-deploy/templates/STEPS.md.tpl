@@ -11,8 +11,20 @@
 
 ## 2. Primer levantamiento
 
+**Dev/staging** (accesible desde cualquier IP que llegue al host en el
+puerto — útil para probar desde otra máquina de la red):
+
 ```bash
 docker compose up -d
+docker compose ps
+```
+
+**Producción** (con virtualhost + certbot del paso 6/7 ya al frente —
+el puerto del contenedor queda atado solo a `127.0.0.1`, nadie puede
+saltarse el reverse proxy):
+
+```bash
+docker compose -f compose.yml -f compose.prod.yml up -d
 docker compose ps
 ```
 
@@ -73,3 +85,7 @@ En este proyecto, `DEPLOY_PATH` = `{{DEPLOY_PATH}}`.
   `.gitignore`).
 - Fija siempre tags de imagen exactos (`PHP_TAG`, `NGINX_TAG`, etc.) —
   nunca `latest`, para que el build sea reproducible.
+- Usa `compose.prod.yml` (`-f compose.yml -f compose.prod.yml`) recién
+  cuando este proyecto quede detrás de un virtualhost real (paso 6/7)
+  — antes de eso, déjalo con solo `compose.yml` para poder verlo desde
+  cualquier IP mientras pruebas.
