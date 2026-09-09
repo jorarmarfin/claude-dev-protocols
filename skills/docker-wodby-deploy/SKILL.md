@@ -182,6 +182,38 @@ Termina esta limpieza siempre con `docker compose config` (o el
 `up -d` si el usuario lo pide) para confirmar que el resultado final
 arranca correctamente, no solo que los archivos quedaron bonitos.
 
+### 1c. Hacer que la config del stack lea las credenciales del entorno (evita desincronización)
+
+La causa más común de romper el sitio tras tocar el `.env` es que el
+archivo de config del stack (`configuration.php` en Joomla, `wp-config.php`
+en WordPress, `settings.php` en Drupal — Laravel ya usa `.env` nativo así
+que no aplica) tenga las credenciales de DB escritas literalmente y
+queden desincronizadas del `.env` en cuanto alguien cambia una sin
+acordarse de la otra. Todos los templates de compose ya pasan
+`DB_HOST`/`DB_USER`/`DB_PASSWORD`/`DB_NAME` como variables de entorno
+al contenedor `php` — haz que el archivo de config las lea de ahí en
+vez de tener el valor duplicado a mano:
+
+- **Joomla** (`configuration.php`, clase `JConfig` con propiedades
+  públicas — no acepta `getenv()` como valor por defecto porque debe
+  ser una expresión constante): agrega un `__construct()` al final de
+  la clase que sobreescriba `$this->host/user/password/db` con
+  `getenv('DB_HOST') ?: $this->host`, etc. Los valores literales que
+  ya trae el archivo quedan como fallback.
+- **WordPress** (`wp-config.php`): reemplaza los `define('DB_HOST', '...')`
+  por `define('DB_HOST', getenv('DB_HOST') ?: 'mariadb')` (WordPress sí
+  permite expresiones normales ahí, no es una propiedad de clase).
+- **Drupal** (`settings.php`): en el array `$databases['default']['default']`,
+  usa `getenv('DB_HOST') ?: 'mariadb'` por cada clave en vez del valor
+  literal.
+- **Moodle** (`config.php`): mismo patrón, `getenv('DB_HOST') ?: 'mariadb'`
+  para `$CFG->dbhost`, `$CFG->dbuser`, `$CFG->dbpass`, `$CFG->dbname`.
+
+Si el archivo de config del proyecto destino ya existe con credenciales
+hardcodeadas al momento de correr este skill, aplica este patrón ahí en
+vez de dejarlo tal cual — es parte de dejar el proyecto en el estándar,
+no un paso opcional.
+
 ### 2. Ajustar el `.env` con los valores reales
 
 Reemplaza en el `.env` generado (no en `.env.example`):
