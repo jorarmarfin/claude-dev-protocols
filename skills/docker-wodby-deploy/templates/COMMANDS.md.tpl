@@ -27,7 +27,7 @@ gunzip -c backups/{{PROJECT_NAME}}_YYYYMMDD_HHMMSS.sql.gz | docker compose exec 
 
 ```bash
 mkdir -p backups
-tar --exclude='./data' --exclude='./.git' --exclude='./node_modules' -czf backups/{{PROJECT_NAME}}_files_$(date +%Y%m%d_%H%M%S).tar.gz .
+tar --exclude='./{{DB_ENGINE}}' --exclude='./.git' --exclude='./node_modules' -czf backups/{{PROJECT_NAME}}_files_$(date +%Y%m%d_%H%M%S).tar.gz .
 ```
 
 ## Logs

@@ -10,7 +10,7 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     command: --innodb_file_per_table=1 --innodb_file_format=barracuda --innodb_large_prefix=1
     volumes:
-      - ./data/mariadb:/var/lib/mysql
+      - ./mariadb/data:/var/lib/mysql
 
   # NOTA: wodby no publica una imagen oficial "moodle-php" con la misma
   # regularidad que drupal-php/wordpress-php. Verificar en
@@ -32,7 +32,7 @@ services:
       PHP_MEMORY_LIMIT: 256M
     volumes:
       - ./app:/var/www/html
-      - ./data/moodledata:/var/www/moodledata
+      - ./moodledata:/var/www/moodledata
     depends_on:
       - mariadb
 
@@ -74,7 +74,7 @@ services:
       sh -c "while true; do php /var/www/html/admin/cli/cron.php; sleep 60; done"
     volumes:
       - ./app:/var/www/html
-      - ./data/moodledata:/var/www/moodledata
+      - ./moodledata:/var/www/moodledata
     depends_on:
       - mariadb
       - php

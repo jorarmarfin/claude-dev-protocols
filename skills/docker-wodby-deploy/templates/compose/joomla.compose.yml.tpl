@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - ./data/mariadb:/var/lib/mysql
+      - ./mariadb/data:/var/lib/mysql
 
   # NOTA: wodby no publica una imagen oficial "joomla-php" con la misma
   # regularidad que drupal-php/wordpress-php. Verificar en

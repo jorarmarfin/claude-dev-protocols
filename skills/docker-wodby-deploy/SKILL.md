@@ -1,6 +1,6 @@
 ---
 name: docker-wodby-deploy
-description: Genera compose.yml, .env, virtualhost (nginx o apache) con comandos certbot, pipeline de CI/CD (GitHub Actions o Bitbucket Pipelines) y un archivo de pasos para desplegar con Docker proyectos Drupal, Laravel, WordPress, Moodle o Joomla usando las imágenes de Wodby, mapeando siempre el código en ./app y los datos persistentes en ./data dentro de la raíz del proyecto. Usar cuando el usuario pida "desplegar con docker", "compose.yml para [drupal|laravel|wordpress|moodle|joomla]", "dockerizar este proyecto con wodby", "virtualhost + certbot para este despliegue", o quiera armar CI/CD para un despliegue Docker de estos stacks.
+description: Genera compose.yml, .env, virtualhost (nginx o apache) con comandos certbot, pipeline de CI/CD (GitHub Actions o Bitbucket Pipelines) y un archivo de pasos para desplegar con Docker proyectos Drupal, Laravel, WordPress, Moodle o Joomla usando las imágenes de Wodby, mapeando siempre el código en ./app, los datos de cada motor de DB en ./<motor>/data, y toda la config de Docker (vhost, extra.conf, .htpasswd) en ./deploy. Usar cuando el usuario pida "desplegar con docker", "compose.yml para [drupal|laravel|wordpress|moodle|joomla]", "dockerizar este proyecto con wodby", "virtualhost + certbot para este despliegue", o quiera armar CI/CD para un despliegue Docker de estos stacks.
 ---
 
 # Skill: Docker Wodby Deploy
@@ -95,6 +95,27 @@ En este orden, y sin generar nada hasta tener respuesta:
      ni variables sueltas sin uso.
    - Si es sí (default más común en staging/desarrollo): déjalo tal
      cual trae el template.
+9. **¿El entorno va a tener usuario/clave (auth_basic) o queda
+   abierto?** Sí/No — típico en staging/interno para bloquear acceso
+   público mientras no hay dominio ni HTTPS todavía.
+   - Si es sí: no le pidas al usuario que invente la clave — genérala
+     tú (ej. `openssl rand -base64 18 | tr -d '/+=' | cut -c1-16`) y
+     pídele solo el usuario (o usa el `PROJECT_NAME` si no especifica).
+     Guarda **usuario y clave en texto plano en `.env`** como
+     `HTTP_BASIC_AUTH_USER`/`HTTP_BASIC_AUTH_PASSWORD` — es la única
+     fuente donde se puede leer la clave después, porque el archivo
+     `.htpasswd` que realmente usa nginx solo guarda un hash
+     irreversible. Genera `.htpasswd` con
+     `htpasswd -bc deploy/nginx/.htpasswd "$HTTP_BASIC_AUTH_USER" "$HTTP_BASIC_AUTH_PASSWORD"`
+     (o `openssl passwd -apr1` si `htpasswd` no está instalado, armando
+     la línea `usuario:hash` a mano). Documenta en `STEPS.md` que la
+     clave vive en `.env` y el comando exacto para regenerarla si
+     cambia. Nunca generes un `.htpasswd` sin dejar la clave en texto
+     plano en algún lugar que el usuario pueda encontrar — es
+     exactamente el error a evitar (una clave que ni el propio usuario
+     puede recuperar después).
+   - Si es no: no generes `.htpasswd` ni el bloque `auth_basic` en
+     `extra.conf`.
 
 No preguntes por cosas que ya se puedan inferir del directorio (p. ej.
 si ya hay un `composer.json` con `laravel/framework`, no preguntes de
@@ -155,11 +176,17 @@ corre, seguirá expuesto en todas las interfaces sin darse cuenta.
 
 Todos los templates de compose mapean el código del proyecto con un
 bind mount a `./app:/var/www/html` (el docroot vive en la subcarpeta
-`app/`, nunca en la raíz — así `compose.yml`, `docker/`, dumps SQL y
-backups quedan fuera del webroot) y los datos persistentes (bases de
-datos, `moodledata`, etc.) en `./data/...` — siempre dentro de la raíz
-del proyecto, nunca en volúmenes con nombre sueltos, para que un backup
-de carpeta se lleve todo.
+`app/`, nunca en la raíz — así `compose.yml`, `deploy/`, dumps SQL y
+backups quedan fuera del webroot) y los datos persistentes de cada
+motor en una carpeta de nivel raíz **con el nombre del motor**, y
+dentro una subcarpeta `data/`: `./mariadb/data`, `./mysql/data`,
+`./postgres/data` — el nombre depende del motor real que use el
+proyecto, no siempre "mariadb". Nunca `./data/<motor>` (el motor va
+primero, no la palabra genérica). Esto siempre dentro de la raíz del
+proyecto, nunca en volúmenes con nombre sueltos, para que un backup de
+carpeta se lleve todo. Datos de aplicación que no son de un motor de
+DB (ej. `moodledata`) van en su propia carpeta de nivel raíz con su
+propio nombre (`./moodledata`), sin el patrón `<nombre>/data`.
 
 **Si el usuario pide "prepara/acomoda/adapta este proyecto a nuestro
 estándar"** (no solo "genera el compose.yml"), esto es una migración de
@@ -180,18 +207,21 @@ convivientes. Revisa al menos:
   config.php, .env de la app) referencia rutas o nombres que asumían la
   carpeta vieja, actualízalo.
 - **Carpeta de infraestructura Docker**: todo lo relacionado a Docker
-  (vhost, extra.conf, .htpasswd, etc.) vive en `./docker/` — si existe
-  una carpeta `deploy/` u otro nombre suelto con el mismo propósito,
-  mueve su contenido a `./docker/` y borra la carpeta vieja.
+  (vhost, extra.conf, .htpasswd, etc.) vive en `./deploy/` — si existe
+  una carpeta `docker/` u otro nombre suelto con el mismo propósito,
+  mueve su contenido a `./deploy/` y borra la carpeta vieja.
 - **Volúmenes de datos**: si `compose.yml` usa un volumen con nombre de
-  Docker (bloque `volumes:` al final del archivo) para datos que deben
-  persistir (DB, uploads, etc.), migra a bind mount visible en
-  `./data/<servicio>/` y borra la declaración del volumen con nombre —
-  si el volumen viejo ya tiene datos y el contenedor no está corriendo,
-  puedes copiarlos con `docker run --rm -v <volumen_viejo>:/from -v
-  $(pwd)/data/<servicio>:/to alpine sh -c 'cp -a /from/. /to/'` antes de
-  quitar la referencia; si está corriendo, avisa al usuario y pide
-  confirmación antes de tocar el volumen en uso.
+  Docker (bloque `volumes:` al final del archivo), o un bind mount en
+  `./data/<motor>` (patrón viejo), migra al bind mount visible
+  `./<motor>/data/` (ej. `./mariadb/data`) y borra la declaración vieja
+  — si ya tiene datos y el contenedor no está corriendo, puedes
+  copiarlos sin sudo con un contenedor que corra como root sobre el
+  bind mount (evita problemas de ownership del host):
+  `docker run --rm -v $(pwd):/proj alpine sh -c 'mv /proj/data/<motor>/* /proj/<motor>/data/ && rmdir /proj/data/<motor> /proj/data && chown -R $(id -u):$(id -g) /proj/<motor>/data'`
+  (para un volumen con nombre de Docker en vez de bind mount, cambia el
+  origen a `-v <volumen_viejo>:/from` y usa `cp -a /from/. /to/`); si el
+  contenedor está corriendo, avisa al usuario y pide confirmación antes
+  de tocar datos en uso.
 - **Archivos/carpetas obsoletos que ya no aplican tras la migración**
   (ej. un `compose.yml` viejo en un formato distinto, un `.env` con
   variables que ya no existen en el template) — bórralos, no los dejes
@@ -262,19 +292,19 @@ templates/vhost/
   `{{DEPLOY_PATH}}` con la ruta dada en 0.7 (el `location`/`Alias` del
   acme-challenge para certbot webroot apunta a `{{DEPLOY_PATH}}/app`)
   al archivo
-  destino: siempre `./docker/{nginx|apache}/{{DOMAIN}}.conf` dentro del
+  destino: siempre `./deploy/{nginx|apache}/{{DOMAIN}}.conf` dentro del
   proyecto — la ruta de instalación en el servidor real depende de la
   distro confirmada en 0.6 (ver abajo).
-- Toda config relacionada a Docker vive bajo `./docker/` — es la
+- Toda config relacionada a Docker vive bajo `./deploy/` — es la
   carpeta estándar del usuario para esto (nginx/extra.conf, .htpasswd,
-  y ahora también el vhost del host), nunca crear una carpeta `deploy/`
+  y ahora también el vhost del host), nunca crear una carpeta `docker/`
   ni ninguna otra alterna para este propósito.
 - Ambos templates son reverse proxy hacia `127.0.0.1:{{HTTP_PORT}}`
   (el puerto que `compose.yml` expone del contenedor `nginx` de
   wodby) — el servidor web del host no sirve el docroot directamente.
 - No los coloques en `/etc/nginx`, `/etc/httpd` o `/etc/apache2`
   directamente — este skill solo genera el archivo en el proyecto
-  (`./docker/...`); copiarlo al sistema y recargar el servicio es un
+  (`./deploy/...`); copiarlo al sistema y recargar el servicio es un
   paso manual del usuario en el servidor (indícalo en `STEPS.md`, no lo
   ejecutes tú salvo que el usuario esté en ese mismo servidor y lo pida
   explícitamente).
@@ -287,12 +317,12 @@ la otra. Añade a `STEPS.md` el bloque correspondiente:
 ```bash
 # --- Debian / Ubuntu ---
 # nginx
-sudo cp ./docker/nginx/{{DOMAIN}}.conf /etc/nginx/sites-available/{{DOMAIN}}.conf
+sudo cp ./deploy/nginx/{{DOMAIN}}.conf /etc/nginx/sites-available/{{DOMAIN}}.conf
 sudo ln -s /etc/nginx/sites-available/{{DOMAIN}}.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # apache (paquete/servicio apache2)
-sudo cp ./docker/apache/{{DOMAIN}}.conf /etc/apache2/sites-available/{{DOMAIN}}.conf
+sudo cp ./deploy/apache/{{DOMAIN}}.conf /etc/apache2/sites-available/{{DOMAIN}}.conf
 sudo a2ensite {{DOMAIN}}.conf
 sudo apache2ctl configtest && sudo systemctl reload apache2
 ```
@@ -301,12 +331,12 @@ sudo apache2ctl configtest && sudo systemctl reload apache2
 # --- RHEL / Rocky Linux / AlmaLinux / CentOS ---
 # nginx (sin sites-available/sites-enabled: el archivo se coloca
 # directo en conf.d y se incluye automáticamente)
-sudo cp ./docker/nginx/{{DOMAIN}}.conf /etc/nginx/conf.d/{{DOMAIN}}.conf
+sudo cp ./deploy/nginx/{{DOMAIN}}.conf /etc/nginx/conf.d/{{DOMAIN}}.conf
 sudo nginx -t && sudo systemctl reload nginx
 
 # apache (paquete/servicio httpd, no apache2; tampoco existe a2ensite,
 # también se coloca directo en conf.d)
-sudo cp ./docker/apache/{{DOMAIN}}.conf /etc/httpd/conf.d/{{DOMAIN}}.conf
+sudo cp ./deploy/apache/{{DOMAIN}}.conf /etc/httpd/conf.d/{{DOMAIN}}.conf
 sudo apachectl configtest && sudo systemctl reload httpd
 
 # SELinux (Enforcing por default en Rocky/RHEL) bloquea el reverse
@@ -379,7 +409,7 @@ secret/variable en GitHub/Bitbucket.
 ### 5. Generar `STEPS.md`
 
 Copia `templates/STEPS.md.tpl` a `./STEPS.md` en la raíz, rellenando:
-- `{{PROJECT_NAME}}`, `{{STACK}}`
+- `{{PROJECT_NAME}}`, `{{STACK}}`, `{{DB_ENGINE}}` (nombre real del motor: `mariadb`, `mysql`, `postgres`, etc. — la carpeta de datos es `./{{DB_ENGINE}}/data`)
 - `{{HTTP_PORT}}`, `{{ADMINER_PORT}}`, `{{MAILHOG_PORT}}` con los
   valores reales del `.env`
 - Si en 0.8 el usuario dijo que no usará Adminer, elimina del
@@ -409,7 +439,7 @@ Copia `templates/STEPS.md.tpl` a `./STEPS.md` en la raíz, rellenando:
 ### 6. Generar `COMMANDS.md`
 
 Copia `templates/COMMANDS.md.tpl` a `./COMMANDS.md` en la raíz,
-rellenando `{{PROJECT_NAME}}`, `{{STACK}}`, `{{DB_USER}}`,
+rellenando `{{PROJECT_NAME}}`, `{{STACK}}`, `{{DB_ENGINE}}`, `{{DB_USER}}`,
 `{{DB_PASSWORD}}`, `{{DB_NAME}}` con los valores reales del `.env`, y
 `{{STACK_COMMANDS}}` con comandos propios del stack elegido, por ejemplo:
 
@@ -454,16 +484,20 @@ Termina siempre listando qué archivos se crearon o modificaron
   usuario explícitamente — no fuerces un tag que no existe ni cambies
   de versión de PHP sin decírselo, porque puede romper compatibilidad
   con el código del proyecto.
-- **Código en `./app`, datos en `./data`** — ambos como carpetas
-  visibles dentro de la raíz del proyecto (nunca volúmenes con nombre
-  gestionados por Docker fuera del proyecto), para que todo (código +
-  datos) viva en una sola carpeta portable y se pueda respaldar con un
-  simple `cp`/`tar` de la carpeta. Cada servicio con estado persistente
-  (MariaDB en `./data/mariadb`, `moodledata` en `./data/moodledata`,
-  etc.) tiene su propia subcarpeta visible dentro de `./data/`, y esa
-  subcarpeta siempre se mapea con bind mount (`- ./data/<servicio>:<ruta
-  interna>`), nunca con un volumen nombrado de Docker — un volumen
-  nombrado solo se justifica cuando el dato es realmente efímero/interno
+- **Código en `./app`, datos por motor en `./<motor>/data`** — ambos
+  como carpetas visibles dentro de la raíz del proyecto (nunca
+  volúmenes con nombre gestionados por Docker fuera del proyecto), para
+  que todo (código + datos) viva en una sola carpeta portable y se
+  pueda respaldar con un simple `cp`/`tar` de la carpeta. Cada motor de
+  base de datos tiene su propia carpeta de nivel raíz nombrada como el
+  motor real (`./mariadb/data`, `./mysql/data`, `./postgres/data` —
+  nunca `./data/mariadb`, el nombre del motor va primero) y esa
+  subcarpeta siempre se mapea con bind mount (`- ./<motor>/data:<ruta
+  interna>`), nunca con un volumen nombrado de Docker. Datos de
+  aplicación que no son de un motor de DB (ej. `moodledata`) van en su
+  propia carpeta de nivel raíz con su propio nombre (`./moodledata`),
+  sin el patrón `<nombre>/data`. Un volumen nombrado solo se justifica
+  cuando el dato es realmente efímero/interno
   (ej. cache de Redis sin persistencia) y no necesita respaldo ni
   portabilidad; en ese caso, ni siquiera declares un volumen, deja el
   servicio sin `volumes:`.

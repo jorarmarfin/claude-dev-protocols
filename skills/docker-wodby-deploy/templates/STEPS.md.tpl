@@ -45,8 +45,8 @@ docker compose logs -f php
 ## 5. Apagar / limpiar
 
 ```bash
-docker compose down          # detiene contenedores, conserva volúmenes (./data)
-docker compose down -v       # además borra los volúmenes con nombre (no ./data, que es bind mount)
+docker compose down          # detiene contenedores, conserva volúmenes ({{DB_ENGINE}}/data)
+docker compose down -v       # además borra los volúmenes con nombre (no {{DB_ENGINE}}/data, que es bind mount)
 ```
 
 ## 6. Virtualhost en el servidor ({{VHOST_SERVER}})
@@ -78,13 +78,20 @@ En este proyecto, `DEPLOY_PATH` = `{{DEPLOY_PATH}}`.
 
 ## Notas
 
-- Los volúmenes de datos (`./data/mariadb`, `./data/moodledata` si aplica)
-  quedan en la raíz del proyecto — respaldarlos junto con el código.
+- Los datos persistentes (`./{{DB_ENGINE}}/data`, `./moodledata` si
+  aplica) quedan en la raíz del proyecto — respaldarlos junto con el
+  código.
 - Nunca commitees `.env` con passwords reales; usa `.env.example` como
   plantilla versionada y `.env` real solo local/servidor (agregar a
   `.gitignore`).
 - Fija siempre tags de imagen exactos (`PHP_TAG`, `NGINX_TAG`, etc.) —
   nunca `latest`, para que el build sea reproducible.
+- Si este entorno tiene auth_basic: **la clave en texto plano vive en
+  `.env`** (`HTTP_BASIC_AUTH_USER`/`HTTP_BASIC_AUTH_PASSWORD`) —
+  `deploy/nginx/.htpasswd` solo tiene el hash, no se puede leer la
+  clave desde ahí. Para regenerarla:
+  `htpasswd -bc deploy/nginx/.htpasswd "$HTTP_BASIC_AUTH_USER" "$HTTP_BASIC_AUTH_PASSWORD"`
+  y luego actualiza `.env` con el mismo valor.
 - Usa `compose.prod.yml` (`-f compose.yml -f compose.prod.yml`) recién
   cuando este proyecto quede detrás de un virtualhost real (paso 6/7)
   — antes de eso, déjalo con solo `compose.yml` para poder verlo desde

@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - ./data/mariadb:/var/lib/mysql
+      - ./mariadb/data:/var/lib/mysql
 
   php:
     image: wodby/php:${PHP_TAG}
