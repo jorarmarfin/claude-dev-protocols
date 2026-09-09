@@ -68,6 +68,13 @@ En este orden, y sin generar nada hasta tener respuesta:
      si el usuario va a desplegar varios proyectos en el mismo host,
      cada dominio necesita apuntar a su propio puerto, así que no
      asumas que siempre coincide con el default.
+   - Y también **¿qué distro corre el servidor?** Familia Debian
+     (Ubuntu/Debian) o familia RedHat (RHEL/Rocky/AlmaLinux/CentOS) — las
+     rutas, el nombre del servicio/paquete y los comandos de habilitación
+     difieren entre ambas (ver paso 3), así que no asumas Debian/Ubuntu
+     por default; pregunta explícitamente. Si el usuario no sabe, sugiere
+     correr `cat /etc/os-release` en el servidor para confirmar antes de
+     generar el vhost.
    - Si es no, omite por completo el paso 4 de más abajo (no generes
      vhost ni comandos certbot, y quita esa sección del `STEPS.md`).
 7. **¿En qué carpeta va a vivir el proyecto en el servidor?** (ruta
@@ -197,15 +204,15 @@ templates/vhost/
 ```
 
 - Copia el `.tpl` correspondiente reemplazando `{{DOMAIN}}` (dominio
-  dado en 0.6) y `{{HTTP_PORT}}` con el puerto confirmado en 0.6 (por
+  dado en 0.6), `{{HTTP_PORT}}` con el puerto confirmado en 0.6 (por
   default el mismo `HTTP_PORT` del `.env`, pero puede ser otro si el
-  usuario está enlazando este dominio a un puerto distinto) al archivo
-  destino:
-  - nginx → `./docker/nginx/{{DOMAIN}}.conf` (el usuario lo copia a
-    `/etc/nginx/sites-available/` en el servidor real y enlaza en
-    `sites-enabled`)
-  - apache → `./docker/apache/{{DOMAIN}}.conf` (a
-    `/etc/apache2/sites-available/`)
+  usuario está enlazando este dominio a un puerto distinto) y
+  `{{DEPLOY_PATH}}` con la ruta dada en 0.7 (el `location`/`Alias` del
+  acme-challenge para certbot webroot apunta a `{{DEPLOY_PATH}}/app`)
+  al archivo
+  destino: siempre `./docker/{nginx|apache}/{{DOMAIN}}.conf` dentro del
+  proyecto — la ruta de instalación en el servidor real depende de la
+  distro confirmada en 0.6 (ver abajo).
 - Toda config relacionada a Docker vive bajo `./docker/` — es la
   carpeta estándar del usuario para esto (nginx/extra.conf, .htpasswd,
   y ahora también el vhost del host), nunca crear una carpeta `deploy/`
@@ -213,22 +220,80 @@ templates/vhost/
 - Ambos templates son reverse proxy hacia `127.0.0.1:{{HTTP_PORT}}`
   (el puerto que `compose.yml` expone del contenedor `nginx` de
   wodby) — el servidor web del host no sirve el docroot directamente.
-- No los coloques en `/etc/nginx` o `/etc/apache2` directamente — este
-  skill solo genera el archivo en el proyecto (`./docker/...`); copiarlo
-  al sistema y recargar el servicio es un paso manual del usuario en el
-  servidor (indícalo en `STEPS.md`, no lo ejecutes tú salvo que el
-  usuario esté en ese mismo servidor y lo pida explícitamente).
+- No los coloques en `/etc/nginx`, `/etc/httpd` o `/etc/apache2`
+  directamente — este skill solo genera el archivo en el proyecto
+  (`./docker/...`); copiarlo al sistema y recargar el servicio es un
+  paso manual del usuario en el servidor (indícalo en `STEPS.md`, no lo
+  ejecutes tú salvo que el usuario esté en ese mismo servidor y lo pida
+  explícitamente).
 
-**Comandos de certbot** (asume que certbot ya está instalado — este
-skill no lo instala): añade a `STEPS.md` el comando según el servidor
-elegido:
+**Instalación del vhost según la distro** (confirmada en 0.6): las
+rutas, el nombre del paquete/servicio y el comando de habilitación
+difieren entre familia Debian y familia RedHat — nunca asumas una por
+la otra. Añade a `STEPS.md` el bloque correspondiente:
 
 ```bash
-# nginx (plugin nginx, ajusta el vhost automáticamente y recarga)
-sudo certbot --nginx -d {{DOMAIN}} -d www.{{DOMAIN}}
+# --- Debian / Ubuntu ---
+# nginx
+sudo cp ./docker/nginx/{{DOMAIN}}.conf /etc/nginx/sites-available/{{DOMAIN}}.conf
+sudo ln -s /etc/nginx/sites-available/{{DOMAIN}}.conf /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 
-# apache (plugin apache, ajusta el vhost automáticamente y recarga)
-sudo certbot --apache -d {{DOMAIN}} -d www.{{DOMAIN}}
+# apache (paquete/servicio apache2)
+sudo cp ./docker/apache/{{DOMAIN}}.conf /etc/apache2/sites-available/{{DOMAIN}}.conf
+sudo a2ensite {{DOMAIN}}.conf
+sudo apache2ctl configtest && sudo systemctl reload apache2
+```
+
+```bash
+# --- RHEL / Rocky Linux / AlmaLinux / CentOS ---
+# nginx (sin sites-available/sites-enabled: el archivo se coloca
+# directo en conf.d y se incluye automáticamente)
+sudo cp ./docker/nginx/{{DOMAIN}}.conf /etc/nginx/conf.d/{{DOMAIN}}.conf
+sudo nginx -t && sudo systemctl reload nginx
+
+# apache (paquete/servicio httpd, no apache2; tampoco existe a2ensite,
+# también se coloca directo en conf.d)
+sudo cp ./docker/apache/{{DOMAIN}}.conf /etc/httpd/conf.d/{{DOMAIN}}.conf
+sudo apachectl configtest && sudo systemctl reload httpd
+
+# SELinux (Enforcing por default en Rocky/RHEL) bloquea el reverse
+# proxy hacia 127.0.0.1:{{HTTP_PORT}} salvo que se permita:
+sudo setsebool -P httpd_can_network_connect on
+```
+
+Si el usuario tiene firewall activo, añade también el comando de abrir
+puertos 80/443 según la distro (`sudo ufw allow 'Nginx Full'` /
+`'Apache Full'` en Debian-Ubuntu con ufw; `sudo firewall-cmd
+--permanent --add-service=http --add-service=https && sudo
+firewall-cmd --reload` en RHEL/Rocky con firewalld) — solo si el
+usuario confirma que el firewall del host está activo, no lo asumas.
+
+**Certbot: solo el certificado, nunca el vhost** — el usuario prefiere
+generar el vhost con este skill y gestionar el certificado
+manualmente, así que **nunca uses los plugins `--nginx`/`--apache` de
+certbot** (reescriben el vhost automáticamente y pisarían el archivo
+generado en este paso). Usa siempre `certonly` en modo webroot, y deja
+que el usuario agregue a mano las líneas `ssl_certificate`/
+`SSLCertificateFile` al vhost una vez tenga el certificado.
+
+Instalación de certbot según la distro (si el usuario no lo tiene
+instalado — pregúntale, no lo instales tú sin avisar):
+
+```bash
+# Debian / Ubuntu
+sudo apt update && sudo apt install -y certbot
+
+# RHEL / Rocky Linux / AlmaLinux / CentOS (requiere EPEL)
+sudo dnf install -y epel-release
+sudo dnf install -y certbot
+```
+
+Comando para obtener el certificado (mismo en ambas distros, certbot
+es el mismo binario, solo cambia `DEPLOY_PATH`/docroot):
+
+```bash
+sudo certbot certonly --webroot -w {{DEPLOY_PATH}}/app -d {{DOMAIN}} -d www.{{DOMAIN}}
 ```
 
 Y siempre el comando de verificación de renovación automática:
@@ -274,13 +339,17 @@ Copia `templates/STEPS.md.tpl` a `./STEPS.md` en la raíz, rellenando:
 - `{{CI_FILE}}` con la ruta del archivo de CI/CD generado en el paso 4
 - `{{DEPLOY_PATH}}` con la ruta dada en 0.7 (carpeta del proyecto en el
   servidor) — úsala también dentro de los comandos de instalación del
-  vhost (`cp .../{{DOMAIN}}.conf /etc/nginx/sites-available/...`) para
-  que quede claro dónde vive todo, ya que varía según cliente/servidor
+  vhost (paso 3) y en el `-w {{DEPLOY_PATH}}/app` del comando certbot,
+  para que quede claro dónde vive todo, ya que varía según
+  cliente/servidor
 - Si el usuario pidió virtualhost (0.6): `{{VHOST_SERVER}}` (nginx o
-  apache) y `{{VHOST_STEPS}}` con la ruta del archivo generado en el
-  paso 3, cómo instalarlo en el servidor (`sites-available` +
-  `sites-enabled`/`a2ensite` + reload) y el comando `{{CERTBOT_CMD}}`
-  correspondiente
+  apache), `{{VHOST_DISTRO}}` (Debian/Ubuntu o RHEL/Rocky, confirmada
+  en 0.6) y `{{VHOST_STEPS}}` con la ruta del archivo generado en el
+  paso 3 y el bloque de instalación correspondiente a esa distro (paso
+  3: rutas `sites-available`+`a2ensite` en Debian/Ubuntu vs `conf.d`
+  directo + `setsebool` en RHEL/Rocky), más el comando
+  `{{CERTBOT_CMD}}` (`certonly --webroot`, nunca el plugin
+  `--nginx`/`--apache`)
 - Si el usuario **no** pidió virtualhost, elimina del `STEPS.md`
   generado las secciones 6 y 7 del template (virtualhost y certbot) —
   no las dejes con placeholders sin rellenar
@@ -318,8 +387,21 @@ Termina siempre listando qué archivos se crearon o modificaron
 
 - **Nunca uses `latest` como tag de imagen** en los templates — todos
   fijan una versión concreta; si el usuario no especifica, deja la que
-  trae el `.tpl` y avísale que puede no ser la más reciente (sugiere
-  verificar en https://hub.docker.com/u/wodby).
+  trae el `.tpl`.
+- **Nunca inventes un tag con sufijo de build** (ej.
+  `7.3-dev-4.36.4`, `1.25-5.13.3`) sin verificarlo — los tags de wodby
+  cambian de sufijo constantemente al salir nuevas builds y un sufijo
+  viejo o adivinado da `manifest unknown` al hacer `docker compose up`.
+  Antes de fijar o cambiar cualquier `*_TAG` en un `.env` real, verifica
+  que exista con `docker manifest inspect wodby/<imagen>:<tag>` (sale
+  limpio si existe, error si no) — o usa el tag simple sin sufijo (ej.
+  `7.3`, `1.25`, `10.11`, `4.8`), que sí es estable y wodby siempre
+  mantiene apuntando a la build más reciente de esa versión. Si detectas
+  que un stack específico ya no tiene builds recientes de la versión de
+  PHP que necesita (ej. wodby/php dejó de publicar 7.x), avisa al
+  usuario explícitamente — no fuerces un tag que no existe ni cambies
+  de versión de PHP sin decírselo, porque puede romper compatibilidad
+  con el código del proyecto.
 - **Código en `./app`, datos en `./data`** — ambos como carpetas
   visibles dentro de la raíz del proyecto (nunca volúmenes con nombre
   gestionados por Docker fuera del proyecto), para que todo (código +
