@@ -3,7 +3,6 @@ PROJECT_NAME=mi_proyecto_drupal
 # --- Puertos expuestos en el host ---
 HTTP_PORT=8000
 ADMINER_PORT=9000
-MAILHOG_PORT=8025
 
 # --- Tags de imágenes wodby (fijar versión exacta, nunca "latest") ---
 PHP_TAG=8.2

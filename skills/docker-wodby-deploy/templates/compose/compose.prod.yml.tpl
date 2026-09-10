@@ -14,7 +14,7 @@
 services:
   nginx:
     ports:
-      - "127.0.0.1:${HTTP_PORT}:8080"
+      - "127.0.0.1:${HTTP_PORT}:80"
 
   adminer:
     ports:

@@ -95,6 +95,12 @@ En este orden, y sin generar nada hasta tener respuesta:
      ni variables sueltas sin uso.
    - Si es sí (default más común en staging/desarrollo): déjalo tal
      cual trae el template.
+
+**El stack por default es siempre nginx + php + mariadb (+ adminer si
+el usuario no dijo que no en 0.8) — nunca agregues un contenedor de
+correo (mailhog/mailpit/etc.) ni `PHP_SENDMAIL_PATH` apuntando a uno**,
+ninguno de los templates de compose lo trae. Solo agrégalo si el
+usuario lo pide explícitamente para este despliegue puntual.
 9. **¿El entorno va a tener usuario/clave (auth_basic) o queda
    abierto?** Sí/No — típico en staging/interno para bloquear acceso
    público mientras no hay dominio ni HTTPS todavía.
@@ -174,6 +180,39 @@ esto al usuario en el resumen final y en `STEPS.md` — es fácil asumir
 que "producción" implica agregar el override, y si el usuario nunca lo
 corre, seguirá expuesto en todas las interfaces sin darse cuenta.
 
+**El contenedor `wodby/nginx` escucha internamente en el puerto `80`,
+no en `8080`** — a pesar de que otras imágenes wodby (y ejemplos
+antiguos) usan 8080 en algunos stacks. Todos los templates ya mapean
+`"${HTTP_PORT}:80"` (y `compose.prod.yml` `"127.0.0.1:${HTTP_PORT}:80"`
+en su override) — nunca cambies esto a `:8080` sin verificar primero
+con `docker compose exec nginx sh -c "ss -tlnp"` dentro del contenedor
+real, porque un mapeo al puerto equivocado da `ERR_CONNECTION_RESET`
+(el puerto del host abre pero nadie escucha del otro lado) en vez de
+un error obvio de Docker.
+
+**Verificar el docroot real antes de dar el compose por bueno**: si el
+proyecto usa `drupal/recommended-project` (composer, lo más común desde
+Drupal 8+), el código fuente vive en `app/web/` dentro del bind mount
+`./app:/var/www/html`, así que el `root` de nginx debe ser
+`/var/www/html/web`, no `/var/www/html` — el template de Drupal ya trae
+`NGINX_SERVER_ROOT: /var/www/html/web` por esto. Antes de dar el
+despliegue por cerrado, confirma con `ls app/web/index.php` (o
+equivalente `public/index.php` en Laravel, WordPress con estructura
+Bedrock, etc.) qué subcarpeta es el docroot real, y ajusta
+`NGINX_SERVER_ROOT` si no coincide con lo que trae el template — un
+`root` mal apuntado da `404 Not Found` en vez de un error claro.
+
+**Verificar la versión de PHP que exige el proyecto, no solo la que
+"suena razonable" para el framework**: revisa
+`app/vendor/composer/platform_check.php` (si ya existe `vendor/`) o el
+`require.php` de `composer.json`/`composer.lock` — si el proyecto ya
+tiene `vendor/` instalado con una versión de PHP más nueva que la que
+trae el `.env` por default, el `platform_check.php` de Composer lanza
+un 500 (`Composer detected issues in your platform`) en vez de un error
+más claro. Ajusta `PHP_TAG` a una versión que cumpla el mínimo exigido
+(verifica que el tag exista con `docker manifest inspect
+wodby/<imagen-php>:<tag>` antes de fijarlo, como con cualquier otro tag).
+
 Todos los templates de compose mapean el código del proyecto con un
 bind mount a `./app:/var/www/html` (el docroot vive en la subcarpeta
 `app/`, nunca en la raíz — así `compose.yml`, `deploy/`, dumps SQL y
@@ -187,6 +226,22 @@ proyecto, nunca en volúmenes con nombre sueltos, para que un backup de
 carpeta se lleve todo. Datos de aplicación que no son de un motor de
 DB (ej. `moodledata`) van en su propia carpeta de nivel raíz con su
 propio nombre (`./moodledata`), sin el patrón `<nombre>/data`.
+
+**Siempre mapear también `./<motor>/init:/docker-entrypoint-initdb.d`**
+en el servicio de base de datos, para cualquier motor (MariaDB, MySQL,
+Postgres) — todas las imágenes de bases de datos que usan estos
+templates soportan esa convención: cualquier `.sql`/`.sh`/`.sql.gz` que
+haya dentro se ejecuta automáticamente la primera vez que el
+contenedor arranca con el volumen de datos (`./<motor>/data`) vacío.
+Es el lugar estándar para dejar un dump inicial (ej. un
+`drupal_11.sql`) en vez de deambulando en la raíz del proyecto o
+importado a mano — si el usuario ya tiene un dump `.sql` en la carpeta
+del proyecto al generar el compose, muévelo a `./<motor>/init/` y
+documenta en `STEPS.md`/`COMMANDS.md` que el import es automático solo
+en el primer arranque (si `./<motor>/data` ya tiene datos, el dump no
+se reimporta solo — hay que correrlo a mano contra el contenedor).
+Aplica este mapeo aunque el usuario no haya pedido explícitamente un
+import inicial: es parte del estándar del compose, no una opción.
 
 **Si el usuario pide "prepara/acomoda/adapta este proyecto a nuestro
 estándar"** (no solo "genera el compose.yml"), esto es una migración de
@@ -410,7 +465,7 @@ secret/variable en GitHub/Bitbucket.
 
 Copia `templates/STEPS.md.tpl` a `./STEPS.md` en la raíz, rellenando:
 - `{{PROJECT_NAME}}`, `{{STACK}}`, `{{DB_ENGINE}}` (nombre real del motor: `mariadb`, `mysql`, `postgres`, etc. — la carpeta de datos es `./{{DB_ENGINE}}/data`)
-- `{{HTTP_PORT}}`, `{{ADMINER_PORT}}`, `{{MAILHOG_PORT}}` con los
+- `{{HTTP_PORT}}`, `{{ADMINER_PORT}}` con los
   valores reales del `.env`
 - Si en 0.8 el usuario dijo que no usará Adminer, elimina del
   `STEPS.md` generado la línea "Adminer (DB): http://localhost:...",
@@ -501,6 +556,13 @@ Termina siempre listando qué archivos se crearon o modificaron
   (ej. cache de Redis sin persistencia) y no necesita respaldo ni
   portabilidad; en ese caso, ni siquiera declares un volumen, deja el
   servicio sin `volumes:`.
+- **`./<motor>/init:/docker-entrypoint-initdb.d` siempre mapeado en el
+  servicio de base de datos**, sin importar el motor (MariaDB, MySQL,
+  Postgres) ni el stack — es la carpeta estándar para un dump inicial
+  que se auto-importa la primera vez que el contenedor arranca con
+  `./<motor>/data` vacío. Nunca lo omitas por default; solo se puede
+  quitar si el usuario dice explícitamente que no quiere ningún dump
+  inicial automático.
 - **Moodle no tiene imagen oficial de wodby tan estable** como
   drupal-php/wordpress-php — el template usa `wodby/php` genérico y
   deja una nota; verifica con el usuario si prefiere una imagen

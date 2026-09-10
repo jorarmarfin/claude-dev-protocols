@@ -10,12 +10,12 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./mariadb/data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d
 
   php:
     image: wodby/drupal-php:${PHP_TAG}
     container_name: "${PROJECT_NAME}_php"
     environment:
-      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       DB_HOST: mariadb
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -37,10 +37,15 @@ services:
       NGINX_ERROR_LOG_LEVEL: debug
       NGINX_BACKEND_HOST: php
       NGINX_VHOST_PRESET: drupal9
+      # Docroot real de un proyecto drupal/recommended-project (composer)
+      # vive en web/, no en la raíz del composer project. Si este
+      # proyecto es un drupal/drupal legado sin subcarpeta web/, cambia
+      # a NGINX_SERVER_ROOT: /var/www/html.
+      NGINX_SERVER_ROOT: /var/www/html/web
     volumes:
       - ./app:/var/www/html
     ports:
-      - "${HTTP_PORT}:8080"
+      - "${HTTP_PORT}:80"
 
   adminer:
     image: wodby/adminer:${ADMINER_TAG}
@@ -51,9 +56,3 @@ services:
       ADMINER_DEFAULT_DB_NAME: ${DB_NAME}
     ports:
       - "${ADMINER_PORT}:9000"
-
-  mailhog:
-    image: mailhog/mailhog
-    container_name: "${PROJECT_NAME}_mailhog"
-    ports:
-      - "${MAILHOG_PORT}:8025"

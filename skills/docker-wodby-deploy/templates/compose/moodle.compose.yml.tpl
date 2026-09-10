@@ -11,6 +11,7 @@ services:
     command: --innodb_file_per_table=1 --innodb_file_format=barracuda --innodb_large_prefix=1
     volumes:
       - ./mariadb/data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d
 
   # NOTA: wodby no publica una imagen oficial "moodle-php" con la misma
   # regularidad que drupal-php/wordpress-php. Verificar en
@@ -21,7 +22,6 @@ services:
     image: wodby/php:${PHP_TAG}
     container_name: "${PROJECT_NAME}_php"
     environment:
-      PHP_SENDMAIL_PATH: /usr/sbin/sendmail -t -i -S mailhog:1025
       DB_HOST: mariadb
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
@@ -49,7 +49,7 @@ services:
     volumes:
       - ./app:/var/www/html
     ports:
-      - "${HTTP_PORT}:8080"
+      - "${HTTP_PORT}:80"
 
   adminer:
     image: wodby/adminer:${ADMINER_TAG}
@@ -60,12 +60,6 @@ services:
       ADMINER_DEFAULT_DB_NAME: ${DB_NAME}
     ports:
       - "${ADMINER_PORT}:9000"
-
-  mailhog:
-    image: mailhog/mailhog
-    container_name: "${PROJECT_NAME}_mailhog"
-    ports:
-      - "${MAILHOG_PORT}:8025"
 
   cron:
     image: wodby/php:${PHP_TAG}

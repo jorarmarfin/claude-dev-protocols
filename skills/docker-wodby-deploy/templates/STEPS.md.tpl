@@ -36,7 +36,6 @@ docker compose ps
 
 - Sitio: http://localhost:{{HTTP_PORT}}
 - Adminer (DB): http://localhost:{{ADMINER_PORT}}
-- Mailhog (correo de pruebas): http://localhost:{{MAILHOG_PORT}}
 
 ```bash
 docker compose logs -f php
