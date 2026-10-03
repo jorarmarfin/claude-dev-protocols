@@ -11,15 +11,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import mimetypes
 import os
 import re
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from pathlib import Path
 
 VALID_AVAILABILITY = {"available", "low_stock", "out_of_stock"}
+IMAGES_BUCKET = "product-images"
 
 
 def parse_key_values(path: Path) -> dict[str, str]:
@@ -115,6 +118,27 @@ def rest_request(
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as e:
         raise SystemExit(f"HTTP {e.code} en {method} {table}: {e.read().decode()}")
+
+
+def storage_upload(base_url: str, service_key: str, storage_path: str, file_path: Path) -> None:
+    mime_type = mimetypes.guess_type(file_path.name)[0] or "application/octet-stream"
+    url = f"{base_url}/storage/v1/object/{IMAGES_BUCKET}/{storage_path}"
+    headers = {
+        "apikey": service_key,
+        "Authorization": f"Bearer {service_key}",
+        "Content-Type": mime_type,
+        "x-upsert": "true",
+    }
+    req = urllib.request.Request(url, method="POST", headers=headers, data=file_path.read_bytes())
+    try:
+        with urllib.request.urlopen(req):
+            pass
+    except urllib.error.HTTPError as e:
+        raise SystemExit(f"HTTP {e.code} subiendo imagen a Storage: {e.read().decode()}")
+
+
+def public_image_url(base_url: str, storage_path: str) -> str:
+    return f"{base_url}/storage/v1/object/public/{IMAGES_BUCKET}/{storage_path}"
 
 
 def print_json(data: object) -> None:
@@ -225,6 +249,33 @@ def cmd_products(args: argparse.Namespace) -> None:
         print_json(rows)
 
 
+def cmd_images(args: argparse.Namespace) -> None:
+    base_url, key = resolve_credentials(args)
+    if args.action != "upload":
+        return
+    file_path = Path(args.file).expanduser()
+    if not file_path.exists():
+        raise SystemExit(f"Archivo no encontrado: {file_path}")
+
+    extension = file_path.suffix.lstrip(".").lower() or "jpg"
+    storage_path = f"products/{args.product_id}/{uuid.uuid4()}.{extension}"
+    storage_upload(base_url, key, storage_path, file_path)
+
+    row = rest_request(
+        base_url, key, "POST", "product_images",
+        body={"product_id": args.product_id, "storage_path": storage_path, "sort_order": args.sort_order},
+    )
+
+    if args.cover:
+        rest_request(
+            base_url, key, "PATCH", "products",
+            query={"id": f"eq.{args.product_id}"},
+            body={"cover_image_path": storage_path},
+        )
+
+    print_json({"storage_path": storage_path, "public_url": public_image_url(base_url, storage_path), "row": row})
+
+
 def cmd_variants(args: argparse.Namespace) -> None:
     base_url, key = resolve_credentials(args)
     if args.status not in VALID_AVAILABILITY:
@@ -321,6 +372,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_update.add_argument("--featured", type=lambda v: v.lower() in ("1", "true", "yes"))
     p_update.add_argument("--active", type=lambda v: v.lower() in ("1", "true", "yes"))
     p_update.set_defaults(func=cmd_products)
+
+    images = sub.add_parser("images")
+    images_sub = images.add_subparsers(dest="action", required=True)
+    i_upload = images_sub.add_parser("upload")
+    i_upload.add_argument("product_id")
+    i_upload.add_argument("file")
+    i_upload.add_argument("--sort-order", type=int, default=0)
+    i_upload.add_argument("--cover", action="store_true", help="además, marca esta imagen como cover_image_path del producto")
+    i_upload.set_defaults(func=cmd_images)
 
     variants = sub.add_parser("variants")
     variants_sub = variants.add_subparsers(dest="action", required=True)

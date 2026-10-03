@@ -83,7 +83,31 @@ python3 $S products update <id> --price 45.00 --featured true
 # Variantes (color × talla × stock) — upsert, no duplica si ya existe la combinación
 python3 $S variants set <product_id> --color-id <id> --size-id <id> --stock 10 --status available
 # --status: available | low_stock | out_of_stock
+
+# Imágenes — sube al bucket Storage `product-images` (mismo bucket/patrón de
+# path que usa la app: products/<product_id>/<uuid>.<ext>) e inserta la fila
+# en product_images. --cover además marca products.cover_image_path.
+python3 $S images upload <product_id> /ruta/a/foto.jpg --sort-order 0 --cover
+python3 $S images upload <product_id> /ruta/a/foto2.jpg --sort-order 1
 ```
+
+## Carpeta de staging: `catalogo_pendiente/`
+
+En el repo `la_huanquita_admin` existe `catalogo_pendiente/` (excluida de git
+en `.gitignore` — nunca se versiona, es solo carga de trabajo temporal). Ahí
+el usuario deja fotos + un `.txt` (formato libre) con los productos que
+quiere subir. Cuando te pida procesar esa carpeta:
+
+1. Lee el `.txt` y las fotos que haya (no asumas un formato rígido — es
+   texto libre, interpreta código/nombre/descripción/precio/categoría/
+   colores/tallas/stock como los describa el usuario).
+2. Si algo es ambiguo (a qué producto pertenece una foto, qué color exacto
+   usar, si el precio es de referencia o "a cotizar"), pregunta — no
+   inventes.
+3. Sigue el flujo de la sección siguiente para crear todo, y al final usa
+   `images upload` para cada foto contra el `product_id` que le corresponda.
+4. Al terminar, dile al usuario qué se subió y qué archivos puede borrar de
+   `catalogo_pendiente/` (o bórralos tú si te confirma que ya están subidos).
 
 ## Flujo recomendado para "subir productos"
 
@@ -93,6 +117,8 @@ python3 $S variants set <product_id> --color-id <id> --size-id <id> --stock 10 -
 2. `products create` con el código, nombre y precio.
 3. Por cada combinación color×talla que tenga el producto, `variants set`
    con el `product_id` devuelto en el paso 2.
+4. Si hay fotos para ese producto, `images upload` por cada una (la primera
+   o la que el usuario indique, con `--cover`).
 
 Si el usuario da una lista/CSV de productos, procesa fila por fila con este
 mismo flujo — confirma con él antes de crear en lote si son más de ~10

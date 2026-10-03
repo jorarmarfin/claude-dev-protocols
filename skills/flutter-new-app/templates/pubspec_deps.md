@@ -53,7 +53,8 @@ http: ^1.6.0          # llamadas simples
 ### Backend gestionado (auth + DB + storage en la nube)
 ```yaml
 supabase_flutter: ^2.17.1
-flutter_dotenv: ^6.0.1   # variables .env (agregar .env a assets: y a .gitignore)
+flutter_dotenv: ^6.0.1   # variables de entorno — ver nota sobre el nombre
+                          # del archivo en el Paso 5 (NO usar ".env")
 ```
 
 ### Autenticacion local / bloqueo biometrico

@@ -199,6 +199,30 @@ Arma las dependencias combinando:
 
 Corre `flutter pub get` al terminar.
 
+### Si el proyecto usa `flutter_dotenv` (backend Supabase u otro con `.env`)
+
+**Nunca nombres el archivo de variables `.env` (con punto inicial).**
+`aapt` (el empaquetador de assets de Android) ignora por default
+cualquier archivo/carpeta que empiece con "." al armar el APK/AAB de
+**release** — el asset queda afuera del build, `dotenv.load()` no
+encuentra nada, y la app se cuelga silenciosamente (tipicamente en el
+login, sin ningun error visible) SOLO en release. En debug/`flutter run`
+via USB funciona bien, lo que hace este bug muy dificil de diagnosticar
+porque no se puede reproducir conectado al cel.
+
+Usa un nombre sin punto inicial, ej. `env.production`, y referencialo
+consistente en:
+- `pubspec.yaml` → `assets: [..., env.production]`
+- `.gitignore` → `env.production` (nunca commitear credenciales reales)
+- `env.example` (sin punto tampoco, para que sea el template legible)
+- `dotenv.load(fileName: 'env.production')` en `main.dart`
+
+Verifica que el asset haya quedado embebido antes de dar el paso por
+terminado:
+```bash
+unzip -l build/app/outputs/flutter-apk/app-release.apk | grep env
+```
+
 ## Paso 6 — icono y splash
 
 Agrega a `pubspec.yaml`:

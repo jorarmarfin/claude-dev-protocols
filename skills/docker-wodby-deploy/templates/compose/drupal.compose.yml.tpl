@@ -24,6 +24,7 @@ services:
       PHP_XDEBUG: ${PHP_XDEBUG:-0}
     volumes:
       - ./app:/var/www/html
+      - ./deploy/php/zzz-clearenv.conf:/usr/local/etc/php-fpm.d/zzz-clearenv.conf:ro
     depends_on:
       - mariadb
 

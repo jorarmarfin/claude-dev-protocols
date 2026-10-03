@@ -184,14 +184,64 @@ def parse_article(path: Path, include_unverified_taxonomy: bool) -> dict[str, ob
 
     topics = clean_taxonomy(parse_bullets(section_block(text, "Topics")), include_unverified_taxonomy)
     tags = clean_taxonomy(parse_bullets(section_block(text, "Tags")), include_unverified_taxonomy)
+    series = clean_taxonomy(parse_bullets(section_block(text, "Series")), include_unverified_taxonomy)
     sources = parse_sources(section_block(text, "Fuentes"))
     if topics:
         payload["topics"] = topics
     if tags:
         payload["tags"] = tags
+    if series:
+        payload["series"] = series
     if sources:
         payload["sources"] = sources
     return payload
+
+
+def read_header(path: Path) -> dict[str, str]:
+    """Parse the leading YAML-like header (estado, slug_api, ...) of an article."""
+    text = path.read_text(encoding="utf-8")
+    header: dict[str, str] = {}
+    if text.startswith("---\n"):
+        end = text.find("\n---", 4)
+        for line in text[4:end].splitlines() if end != -1 else []:
+            m = re.match(r"^([A-Za-z_]+):\s*(.*)$", line)
+            if m:
+                header[m.group(1)] = m.group(2).strip().strip('"')
+    return header
+
+
+def set_header(path: Path, key: str, value: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    if re.search(rf"^{key}:.*$", text.split("\n---", 1)[0], flags=re.MULTILINE):
+        head, rest = text.split("\n---", 1)
+        head = re.sub(rf"^{key}:.*$", f"{key}: {value}", head, count=1, flags=re.MULTILINE)
+        text = head + "\n---" + rest
+    elif text.startswith("---\n"):
+        text = f"---\n{key}: {value}\n" + text[4:]
+    else:
+        text = f"---\n{key}: {value}\n---\n\n" + text
+    path.write_text(text, encoding="utf-8")
+
+
+def check_estado(path: Path, force: bool) -> str:
+    """Gate: only articles with estado: aprobado may be sent. Returns the header slug_api."""
+    header = read_header(path)
+    estado = header.get("estado", "").lower()
+    if estado == "aprobado":
+        return header.get("slug_api", "")
+    if estado == "publicado" and not force:
+        raise SystemExit(
+            f"BLOQUEADO: {path.name} ya está publicado (estado: publicado). "
+            "No se reenvía. Si hay que actualizarlo, cambia estado a 'aprobado'."
+        )
+    if estado in ("borrador", "") and not force:
+        raise SystemExit(
+            f"ADVERTENCIA: {path.name} está en estado '{estado or 'sin estado'}' (borrador). "
+            "Nunca se envía hasta que lo apruebes: cambia a 'estado: aprobado' en la cabecera."
+        )
+    if estado not in ("aprobado", "publicado", "borrador", ""):
+        raise SystemExit(f"Estado desconocido '{estado}' en {path.name}; usa borrador | aprobado | publicado.")
+    return header.get("slug_api", "")
 
 
 def request_json(method: str, url: str, token: str, payload: object | None, dry_run: bool) -> None:
@@ -275,6 +325,7 @@ def main() -> int:
     draft.add_argument("--slug", help="Required for --update; defaults to slugified title")
     draft.add_argument("--update", action="store_true")
     draft.add_argument("--include-unverified-taxonomy", action="store_true")
+    draft.add_argument("--force", action="store_true", help="Ignore the estado gate (only if the user explicitly asks)")
 
     topics = subparsers.add_parser("topics", help="Add or remove topics")
     add_common(topics)
@@ -310,13 +361,17 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "draft":
+        article_path = Path(args.article)
+        header_slug = check_estado(article_path, args.force)
         base_url, token = load_write_auth(args)
-        payload = parse_article(Path(args.article), args.include_unverified_taxonomy)
-        slug = args.slug or slugify(str(payload["title"]))
-        if args.update:
+        payload = parse_article(article_path, args.include_unverified_taxonomy)
+        slug = args.slug or header_slug or slugify(str(payload["title"]))
+        if args.update or header_slug:
             request_json("PUT", f"{base_url}/ai/drafts/{slug}", token, payload, args.dry_run)
         else:
             request_json("POST", f"{base_url}/ai/drafts", token, payload, args.dry_run)
+        if not args.dry_run:
+            set_header(article_path, "estado", "publicado")
         return 0
 
     if args.command in {"topics", "tags"}:

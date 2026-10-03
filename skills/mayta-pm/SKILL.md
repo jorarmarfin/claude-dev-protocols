@@ -1084,6 +1084,28 @@ Cada proyecto debería poder mantener:
 
 ---
 
+# 19.1 INTEGRACIÓN CON PRAXIS (backend ejecutable)
+
+Cuando estés trabajando dentro del repo `praxis` (el gestor de proyectos
+personal del usuario, en `/mnt/DATOS/LUIS/PycharmProjects/praxis`), ese
+proyecto ya tiene una API REST corriendo (FastAPI) que persiste proyectos,
+fases, tareas, dependencias, hitos y recordatorios en una base de datos real,
+con dashboard web y export a Excel automático.
+
+En ese contexto, **no te limites a generar PROJECT.md/WBS/Excel como archivos
+sueltos** — usa la API de Praxis como backend real para todo lo que este
+documento te pide crear (proyecto, fases, backlog, hitos). Antes de empezar,
+lee `PRAXIS_API.md` en la raíz de ese repo: ahí está el mapeo completo de
+comandos → endpoints, el mapeo de vocabulario español↔inglés de estados y
+prioridades, y ejemplos de `curl` listos para usar (incluye un endpoint de
+creación masiva de tareas, pensado justo para volcar el backlog que generas
+en la Sección 7).
+
+Fuera del repo `praxis` (otros proyectos sin ese backend), sigue usando el
+flujo normal de archivos Markdown/Excel descrito en este documento.
+
+---
+
 # 20. REGLAS PARA EL EXCEL
 
 El archivo debe ser realmente utilizable.

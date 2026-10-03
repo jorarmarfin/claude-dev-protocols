@@ -54,6 +54,7 @@ Both endpoints accept a complete article payload:
   "content_type": "article",
   "topics": ["topic-slug"],
   "tags": ["tag-slug"],
+  "series": ["series-slug-or-name"],
   "sources": [
     {
       "source_id": 1,
@@ -73,8 +74,8 @@ Rules from the local docs:
 - Draft endpoints always create or edit drafts, never published articles.
 - `ai_assisted=true` is handled by the API.
 - `section` must already exist (by slug); an unknown section returns `422`.
-- `topics` and `tags` no longer need to exist beforehand: the draft endpoints resolve each entry by slug and auto-create it (name + slug) when missing, the same way the association endpoints do. Sending a slug or a plain name both work.
-- `series` is not accepted in the JSON; mention series suggestions in `ai_notes`.
+- `topics`, `tags`, and `series` no longer need to exist beforehand: the draft endpoints resolve each entry by slug and auto-create it (name + slug) when missing, the same way the association endpoints do. Sending a slug or a plain name both work.
+- Updating a draft replaces the full `series` list with the one sent (same replace-all semantics as `topics`/`tags`); omit `series` to leave the article with none.
 - `status`, `is_featured`, `published_at`, `author_id`, and `review_notes` are ignored if sent.
 - Updating a draft replaces the full article content.
 - Updating published or archived articles returns `409`.

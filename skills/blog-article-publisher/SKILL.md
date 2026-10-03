@@ -24,6 +24,26 @@ Use the read token (`apiToken`, `api_token`, or `token`) for portal lookups. Use
 
 If `api.http` or `ESTRUCTURA_Contenido_Articulo_IA.md` is present, prefer those local files over this skill's summary because they may be newer.
 
+## Estado del artículo (cabecera obligatoria)
+
+Cada `*.md` lleva al inicio una cabecera con el estado editorial:
+
+```yaml
+---
+estado: borrador | aprobado | publicado
+slug_api: slug-devuelto-por-la-api   # solo si ya existe en la API
+---
+```
+
+Reglas (el script `draft` las aplica y se niega a enviar si no se cumplen):
+
+- `borrador`: NUNCA enviar. Avisar al usuario con una advertencia y pedirle que lo marque `aprobado`.
+- `aprobado`: único estado que se envía. Tras un envío exitoso el script cambia solo a `publicado`. Si hay `slug_api`, hace PUT (actualización) en vez de POST.
+- `publicado`: ya subido. No reenviar; para actualizarlo el usuario debe cambiarlo a `aprobado`.
+- Sin cabecera = tratar como `borrador`.
+- Claude nunca cambia un artículo a `aprobado` por su cuenta; solo el usuario lo aprueba. `--force` solo si el usuario lo pide explícitamente.
+- Antes de enviar, confirmar contra la API (`read articles` / `read ai/drafts/<slug>`) que no esté ya subido. Enviar un `aprobado` con `slug_api` actualiza un artículo ya publicado: advertirlo.
+
 ## Behavior
 
 Before sending or updating an article, ask which article to use when the user has not named one. Prefer listing available `*.md` files from the current directory.
@@ -65,10 +85,11 @@ The local article Markdown format maps to the API payload as follows:
 - `## Metadatos`: bullet keys such as `excerpt`, `section`, `level`, `content_type`, `seo_title`, `seo_description`, and `ai_notes`.
 - `## Topics`: topic slugs or names, one per bullet.
 - `## Tags`: tag slugs or names, one per bullet.
+- `## Series`: series slugs or names, one per bullet.
 - `## Fuentes`: numbered entries using `source_id`, `reference`, `quote`, and optional `context_note`.
 - `## Contenido`: everything after this heading, until `## Fuentes` if present, becomes `content`.
 
-The draft endpoints (`POST /ai/drafts`, `PUT /ai/drafts/{slug}`) auto-create any topic or tag that doesn't already exist yet, resolved by slug — no separate association call is needed just because a topic/tag is new. `section` is the only taxonomy field that must already exist; an unknown section slug returns `422`.
+The draft endpoints (`POST /ai/drafts`, `PUT /ai/drafts/{slug}`) auto-create any topic, tag, or series that doesn't already exist yet, resolved by slug — no separate association call is needed just because it's new. `section` is the only taxonomy field that must already exist; an unknown section slug returns `422`. Updating a draft replaces the full `series` list, so re-send every series the article should keep, not just the new ones.
 
 When a topic or tag line includes editorial notes such as `verificar existencia`, that flag is about whether the suggestion is a good fit editorially, not about whether the API can create it — it can. Ask the user whether to include it as-is, drop it, or hold it for confirmation before sending; don't silently send unconfirmed AI-suggested taxonomy.
 

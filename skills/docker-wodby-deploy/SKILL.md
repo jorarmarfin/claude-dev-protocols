@@ -149,6 +149,8 @@ templates/
   ci/
     github-actions-deploy.yml.tpl
     bitbucket-pipelines.yml.tpl
+  php/
+    zzz-clearenv.conf
   STEPS.md.tpl
   COMMANDS.md.tpl
 ```
@@ -164,6 +166,11 @@ Copia el `.tpl` del stack elegido a la raíz del proyecto destino:
   (mismo contenido, pero `.env.example` con los passwords reemplazados
   por placeholders tipo `CAMBIA_ESTA_PASSWORD` — nunca commitear
   passwords reales)
+- `templates/php/zzz-clearenv.conf` → `./deploy/php/zzz-clearenv.conf`
+  (siempre que el stack use una imagen `wodby/php*` — todos salvo el
+  motor de DB/adminer/redis — ya que el compose de cada stack monta
+  este archivo en el servicio `php`; ver la nota de `clear_env` más
+  abajo)
 
 **Dev/staging vs producción — quién puede ver el sitio por el puerto
 publicado:** `compose.yml` solo (`docker compose up -d`) publica los
@@ -212,6 +219,26 @@ un 500 (`Composer detected issues in your platform`) en vez de un error
 más claro. Ajusta `PHP_TAG` a una versión que cumpla el mínimo exigido
 (verifica que el tag exista con `docker manifest inspect
 wodby/<imagen-php>:<tag>` antes de fijarlo, como con cualquier otro tag).
+
+**Las imágenes `wodby/php*` (drupal-php, wordpress-php, php genérico)
+traen `/usr/local/etc/php-fpm.d/zz-www.conf` con `clear_env = yes` y
+sin reenviar ninguna variable** — los workers de `php-fpm` (los que
+atienden la web vía nginx) quedan sin `DB_HOST`/`DB_USER`/
+`DB_PASSWORD`/`DB_NAME`/etc. del entorno del contenedor, aunque
+`docker compose exec php sh -c "env | grep DB_"` las muestre bien
+seteadas. Síntoma característico: `drush`/`wp-cli` (procesos CLI,
+heredan el entorno completo) conectan sin problema a la DB, pero la
+web da `Access denied for user 'root'@...` (o similar, cayendo a
+credenciales por default del `settings.php`/`wp-config.php`) — muy
+confuso porque toda la config "se ve" bien. El fix: montar
+`./deploy/php/zzz-clearenv.conf` (copiado de `templates/php/` en el
+paso 1) en `/usr/local/etc/php-fpm.d/zzz-clearenv.conf` del servicio
+`php` — el nombre ordena después de `zz-www.conf` así que su
+`clear_env = no` gana para el pool `[www]`. Todos los templates de
+compose ya traen este mount; si generas o migras un `compose.yml` a
+mano, no lo olvides. (Ojo con la sintaxis: los comentarios en archivos
+`.conf` de php-fpm van con `;`, no con `#` — un `#` al inicio de línea
+rompe el parseo y tira el contenedor con `FPM initialization failed`.)
 
 Todos los templates de compose mapean el código del proyecto con un
 bind mount a `./app:/var/www/html` (el docroot vive en la subcarpeta
