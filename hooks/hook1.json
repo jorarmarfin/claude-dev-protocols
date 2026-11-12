@@ -1,0 +1,22 @@
+"hooks": {
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "afplay /Users/strider/Desktop/claudecode-finished.mp3 &"
+        }
+      ]
+    }
+  ],
+  "Notification": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "afplay /Users/strider/Desktop/claudecode-finished.mp3 &"
+        }
+      ]
+    }
+  ]
+}

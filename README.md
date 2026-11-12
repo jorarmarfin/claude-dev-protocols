@@ -110,4 +110,29 @@ usa las convenciones de `flask-blueprint-expert` si detecta ese stack.
   instalación, no el día a día de construir un Resource
 - Decidir si `SKILL-spec-to-phases.md` (raíz, doc original) se elimina
   ahora que `skills/spec-to-phases/SKILL.md` lo reemplaza
-- `hooks/` sigue vacío — sin necesidad identificada todavía
+
+## Hooks: sonido con switch (silencio en reuniones)
+
+Los hooks `Stop` y `Notification` de `~/.claude/settings.json` reproducen un mp3
+(`ffplay`). Para no sonar durante Zoom/Meet hay un switch por archivo flag.
+
+| Archivo (copia en `hooks/`) | Instalado en | Función |
+|---|---|---|
+| `claude-notify.sh <stop\|ask>` | `~/.claude/bin/` | Lo llaman los hooks. Con `~/.claude/mute` → solo `notify-send` (popup); sin él → audio |
+| `claude-sound.sh [on\|off\|toggle\|status]` | `~/.claude/bin/` | Crea/borra `~/.claude/mute` y muestra popup con el estado |
+
+`settings.json`: `Stop` → `claude-notify.sh stop`, `Notification` → `claude-notify.sh ask`.
+
+Uso (alias en `~/.zshrc`: `alias csound='~/.claude/bin/claude-sound.sh'`):
+
+```
+csound off      # reunión: sin audio, solo aviso visual
+csound on       # vuelve el audio
+csound          # toggle
+csound status
+```
+
+- Aplica al instante, sin reiniciar Claude.
+- Opcional: atajo global del sistema (ej. `Ctrl+Alt+M`) apuntando a `claude-sound.sh`.
+- Mp3 usados: `/home/lmayta/stop.mp3`, `/home/lmayta/asistencia.mp3`.
+- Reinstalar en otra máquina: copiar los 2 scripts a `~/.claude/bin/`, `chmod +x`, y apuntar los hooks.
