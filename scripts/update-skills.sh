@@ -11,7 +11,7 @@ for src in "$CLAUDE_DIR"/skills/*/; do
   [ -L "${src%/}" ] && continue   # saltar symlinks (no son propios)
   dest="$REPO_DIR/skills/$name"
   mkdir -p "$dest"
-  rsync -a --delete --exclude '.git' "$src" "$dest/"
+  rsync -a --delete --exclude '.git' --exclude '__pycache__' --exclude 'credentials' --exclude '.env' "$src" "$dest/"
   echo "  - $name"
 done
 
